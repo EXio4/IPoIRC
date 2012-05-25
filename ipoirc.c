@@ -396,14 +396,6 @@ void join (irc_conn *client) {
 	}
 }
 
-char* STRING_CUT(const char* str, size_t begin, size_t len)
-{
-  if (str == 0 || strlen(str) == 0 || strlen(str) < begin || strlen(str) < (begin+len))
-    return 0;
-
-  return strndup(str + begin, len);
-}
-
 int IRC_BIN_SEND(irc_conn *client,char *chan, char *hash,char *msg,int maxperline, int len){
 	if (!client) return -1;
 	char *b64enc;
@@ -416,10 +408,8 @@ int IRC_BIN_SEND(irc_conn *client,char *chan, char *hash,char *msg,int maxperlin
 
 				max=len-i;
 			}
-			tmpmsg=STRING_CUT(msg,i,max);
-			DEBUG(25,"~base64 %s-->%s ",msg,tmpmsg);
-			base64_encode_alloc (tmpmsg,strlen(tmpmsg),&b64enc);
-			DEBUG(25,"... result: %s\n",b64enc);
+			base64_encode_alloc (msg+i,max,&b64enc);
+			DEBUG(25,"~base64 result: %s\n",b64enc);
 			IRC_RAW(client,"PRIVMSG %s :%s %s",chan,hash,b64enc);
 			//free(tmpmsg);tmpmsg=NULL;
 		}
