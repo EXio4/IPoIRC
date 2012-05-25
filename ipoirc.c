@@ -319,6 +319,7 @@ int readline_sock(int sock, char** out) {
         return i + 1;
 }
 int IRC_READ(irc_conn *client) {
+	char *smp;
 	int i;
 	i=readline_sock(client->sock,&smp);
 	strncpy(client->line->rawmsg,smp,sizeof(client->line->rawmsg));	
