@@ -156,7 +156,7 @@ md5_update (const char *input, int inputlen)
   inputlen -= 64 - buflen;
   while (inputlen >= 64)
     {
-      md5_transform (input);
+      md5_transform ((unsigned char*)input);
       input += 64;
       inputlen -= 64;
     }
@@ -193,14 +193,14 @@ md5 (const char *input)
   memcpy ((char *) state, (char *) initstate, sizeof (initstate));
   length = 0;
   md5_update (input, strlen (input));
-  return md5_final ();
+  return (char*) md5_final();
 }
 
 char *
 genmd5 (char *buffer) 
 {
   static char result[16 * 3 +1];
-  unsigned char* digest = md5 (buffer);
+  char* digest = md5 (buffer);
   int i;
 
   for (i=0; i < 16; i++)
