@@ -307,6 +307,7 @@ int IRC_QUIT(irc_conn *client,char *msg) {
 	EVENT_RUN(client->command->cmd,MX,"prev_quit",client,msg,NULL);
 	int i=IRC_RAW(client,"QUIT :%s",msg);
 	EVENT_RUN(client->command->cmd,MX,"post_quit",client,NULL,NULL);
+	SOCK_CLOSE(client->sock);
 	client->sock=-1;
 	return i; 
 }
