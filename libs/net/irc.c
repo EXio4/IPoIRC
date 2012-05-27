@@ -109,7 +109,8 @@ int IRC_RAW(irc_conn *client, char *fmt, ...) {
    	vsnprintf(buffer,1024,fmt,args);
     DEBUG("sending raw command (%s) to %s in [%d] sock\n",buffer,client->connect->host,client->sock);
     va_end(args);
-   	int i=SOCK_WRITE(client->sock, "%s\r\n", buffer);
+	EVENT_RUN(client->command->cmd,MX,"on_sendraw",client,buffer,NULL);
+	int i=SOCK_WRITE(client->sock, "%s\r\n", buffer);
 	FREE(buffer);
 	return i;
 }
@@ -133,6 +134,7 @@ int IRC_PRIVMSG(irc_conn *client,char *channel, char *fmt, ...) {
    	vsnprintf(buffer,sizeof(buffer),fmt,args);
     DEBUG("sending privmsg to %s with msg: %s\n",channel,buffer);
     va_end(args);
+   	EVENT_RUN(client->command->cmd,MX,"on_sendprivmsg",client,buffer,NULL);
    	int i=IRC_RAW(client,"PRIVMSG %s :%s",channel,buffer);
 	FREE(buffer);
 	return i;
@@ -147,6 +149,7 @@ int IRC_NOTICE(irc_conn *client,char *channel, char *fmt, ...) {
    	vsnprintf(buffer,sizeof(buffer),fmt,args);
     DEBUG("sending notice to %s with msg: %s\n",channel,buffer);
     va_end(args);
+   	EVENT_RUN(client->command->cmd,MX,"on_sendnotice",client,buffer,NULL);
    	int i=IRC_RAW(client,"NOTICE %s :%s",channel,buffer);
 	FREE(buffer);
 	return i;
@@ -171,13 +174,14 @@ int IRC_START(irc_conn *client) {
 	char *ident=client->connect->ident,*realname=client->connect->realname;
 	if (!ident) { DEBUG("fallback ident to nick\n");ident=client->connect->nick; }
 	if (!realname) { DEBUG("fallback realname to nick\n");realname=client->connect->nick; }
+	EVENT_RUN(client->command->cmd,MX,"prev_register",client,NULL,NULL);
 	if (client->connect->password) {
 		DEBUG("sending pass to server...\n");
 		IRC_RAW(client,"PASS %s",client->connect->password);
 	}
 	IRC_RAW(client,"USER %s %s * :%s",ident,client->connect->host,realname);
 	IRC_RAW(client,"NICK %s",client->connect->nick);
-	
+	EVENT_RUN(client->command->cmd,MX,"post_register",client,NULL,NULL);
 	// autorun commands
 	for (i=0;i<MX;i++) {
 		if (!client->connect->autorun[i]) {
@@ -193,8 +197,8 @@ int IRC_START(irc_conn *client) {
 		if (!client->connect->channels[i]->name) {
 				DEBUG("end channel joins...\n");
 				break;
-			}
-			DEBUG("running command [%d] .. \n",i);
+		}
+			DEBUG("joining in [%s] .. \n",client->connect->channels[i]->name);
 			IRC_JOIN(client,client->connect->channels[i]->name,client->connect->channels[i]->key);
 	}
 	return 0;
@@ -269,9 +273,22 @@ int IRC_RUN(irc_conn *client) {
 		DEBUG("ping!\n");
 		sscanf(client->message->raw,"PING :%511s",ping);
 		IRC_RAW(client,"PONG :%s",ping);
-		DEBUG("pong!\n");	
+		EVENT_RUN(client->command->cmd,MX,"ping",client,NULL,NULL);
+		DEBUG(">pong!\n");	
 	}
+	if (strncmp(client->message->raw,"PONG",4)==0) {
+		DEBUG("<pong!\n");
+		sscanf(client->message->raw,"PONG :%511s",ping);
+		EVENT_RUN(client->command->cmd,MX,"pong",client,ping,NULL);
+	}	
 	FREE(ping);
+	if (client->message->command) {
+		DEBUG("running %s hook!\n",client->message->command);
+		EVENT_RUN(client->command->cmd,MX,client->message->command,client,NULL,NULL);
+	} else {
+		DEBUG("running unknown hook! (raw: %s)\n",client->message->raw);
+		EVENT_RUN(client->command->cmd,MX,"unknown",client,NULL,NULL);
+	}
 	return 0;
 }
 
@@ -279,7 +296,9 @@ int IRC_QUIT(irc_conn *client,char *msg) {
 	if (client==NULL) { DEBUG("irc_quit ... only valid allocated irc_conn\n"); return -1; }
 	if (client->sock==-1) { DEBUG("irc_quit ... need a connected server\n");return -1; };
 	DEBUG("disconnecting from sock <%d> with msg: %s \n",client,msg);
+	EVENT_RUN(client->command->cmd,MX,"prev_quit",client,msg,NULL);
 	int i=IRC_RAW(client,"QUIT :%s",msg);
+	EVENT_RUN(client->command->cmd,MX,"post_quit",client,NULL,NULL);
 	client->sock=-1;
 	return i; 
 }
@@ -289,6 +308,7 @@ int IRC_FREE(irc_conn *client) {
 	DEBUG("Free to IRC connection ... \n");
 	if (!client) { DEBUG("client = NULL\n");;return 0; } 
  	if (client->sock >= 0 ) { DEBUG("Already connected irc_conn...\n");return 1; };
+ 	EVENT_RUN(client->command->cmd,MX,"on_destroy",client,NULL,NULL);
 	for (i=0;i<MX;i++) {
 		FREE(client->connect->autorun[i]);
 		FREE(client->command->cmd[i]->name);
@@ -345,5 +365,5 @@ void IRC_SET(irc_conn *client, int option, char *value) {
 				client->connect->password=temp;
 			break;
 	}
-	
+	EVENT_RUN(client->command->cmd,MX,"set",client,&option,value);	
 }
