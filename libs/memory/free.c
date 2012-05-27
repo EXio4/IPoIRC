@@ -7,7 +7,7 @@ void TONULL(void *ptr) {
 	if (ptr==NULL) {
 		return;
 	}
-	DEBUG("poiting %p to NULL\n",ptr);
+	DEBUG("pointer %p to NULL\n",ptr);
 	ptr=NULL;
 }
 

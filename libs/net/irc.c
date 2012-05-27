@@ -292,6 +292,14 @@ int IRC_RUN(irc_conn *client) {
 	return 0;
 }
 
+int IRC_ATTACH(irc_conn *client,char *command, void (*function)) {
+	DEBUG("attaching %p to %s\n",function,command);
+	return EVENT_ATTACH(client->command->cmd,MX,command,function);
+}
+int IRC_UNATTACH(irc_conn *client,int num) {
+	DEBUG("unattaching event...\n");
+	return EVENT_UNATTACH(client->command->cmd,num);
+}
 int IRC_QUIT(irc_conn *client,char *msg) {
 	if (client==NULL) { DEBUG("irc_quit ... only valid allocated irc_conn\n"); return -1; }
 	if (client->sock==-1) { DEBUG("irc_quit ... need a connected server\n");return -1; };

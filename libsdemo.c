@@ -37,11 +37,16 @@ void usage(char *prog) {
 	printf("%s usage:\n\t%s server nick password\n",prog,prog);
 	exit(1);
 }
+
+void test(irc_conn* client,void* par2,void* par3) {
+	printf("PRIVMSG! %s\n",client->message->message);
+}
 int main(int argc,char *argv[]) {
 	if (argc<3) { usage(argv[0]); }
 	printf("creating ... ");
 	irc_conn* client=NewIRC();
 	printf("\n");
+	IRC_ATTACH(client,"PRIVMSG",&test);
 	IRC_SET(client,ServerName,argv[1]);
 	IRC_SET(client,Nick,argv[2]);
 	IRC_SET(client,Password,argv[3]);

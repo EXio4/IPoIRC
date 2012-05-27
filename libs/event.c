@@ -31,10 +31,10 @@ int EVENT_ATTACH(pcmd **evs,int arraylen,char *eventname,void (*function)) {
 		DEBUG("[event_attach] checking if [%d] point is available ..\n");
 		if (evs[i]->name==NULL) {
 			DEBUG(" .. yes!\n");
-			DEBUG("evs[%d]->name=malloc(%d)",i,sizeof(eventname));
-			evs[i]->name=malloc(sizeof(eventname));
+			DEBUG("evs[%d]->name=malloc(%d)",i,strlen(eventname)+1);
+			evs[i]->name=malloc(strlen(eventname)+1);
 			DEBUG(".. pointer %p\n",evs[i]->name);
-			strncpy(evs[i]->name,eventname,sizeof(evs[i]->name));
+			strncpy(evs[i]->name,eventname,strlen(eventname));
 			evs[i]->run=function;
 			return i;
 		} else { DEBUG("no, trying other...\n"); }

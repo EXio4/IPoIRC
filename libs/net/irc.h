@@ -60,3 +60,5 @@ int IRC_PARSE(irc_conn *client);
 int IRC_RUN(irc_conn *client);
 int IRC_QUIT(irc_conn *client,char *msg);
 void IRC_SET(irc_conn *client, int option, char *value);
+int IRC_ATTACH(irc_conn *client,char *command, void (*function));
+int IRC_UNATTACH(irc_conn *client,int num);
