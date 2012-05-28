@@ -324,7 +324,6 @@ int IRC_FREE(irc_conn *client) {
 	for (i=0;i<MX;i++) {
 		FREE(client->connect->autorun[i]);
 		FREE(client->command->cmd[i]->name);
-		FREE(client->command->cmd[i]->run);
 		FREE(client->command->cmd[i]);
 		FREE(client->connect->channels[i]->name);
 		FREE(client->connect->channels[i]->key);
