@@ -1,10 +1,8 @@
-IPoIRC
-======
+# IPoIRC
 
 A simple gateway of IP over IRC!
 
 
-Current status
-==============
+## Current status
 
 No (functional) release available.
