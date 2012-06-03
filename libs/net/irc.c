@@ -192,7 +192,7 @@ int IRC_START(irc_conn *client) {
 			IRC_RAW(client,client->connect->autorun[i]);
 	}
 	DEBUG("connected to %s!\n",client->connect->host);
-	DEBUG("joining in channels...\n");
+	DEBUG("joining channels...\n");
 	for (i=0;i<MX;i++) {
 		if (!client->connect->channels[i]->name) {
 				DEBUG("end channel joins...\n");
