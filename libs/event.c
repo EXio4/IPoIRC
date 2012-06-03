@@ -43,7 +43,7 @@ int EVENT_ATTACH(pcmd **evs,int arraylen,char *eventname,void (*function)) {
 	return -1;
 }
 
-int EVENT_UNATTACH(pcmd **evs,int num) {
+int EVENT_DETACH(pcmd **evs,int num) {
 	if (evs[num]->name) {
 		DEBUG("unattaching [%d] event...\n");
 		FREE(evs[num]->name);
