@@ -1,5 +1,5 @@
-FLAGS= -I. 
-LIBS=libs/crypt/{base64,md5}.c
+FLAGS= -Wall -I. 
+LIBS=libs/crypt/base64.c libs/crypt/md5.c
 FILE=ipoirc.c
 BIN=ipoirc
 BINDEMO=demo
