@@ -75,7 +75,7 @@ typedef struct {
 } irc_line;
 typedef struct {
 	char *commands[MAXCMD];
-	void (*run[MAXCMD])(irc_conn); 
+	void (*run[MAXCMD])(void*); 
 } irc_cmd;
 typedef struct {
 	char	host[128]; // hostname of the ircserver 
@@ -400,7 +400,6 @@ int IRC_BIN_SEND(irc_conn *client,char *chan, char *hash,char *msg,int maxperlin
 	if (!client) return -1;
 	char *b64enc;
 	int i,max;
-	char *tmpmsg;
 	max=maxperline;
 		DEBUG(25,"~~data: len=%d max=%d\n",len,max);
 		for(i=0;i<len;i+=max) {
@@ -424,9 +423,9 @@ int IRC_BIN_READ(irc_conn *client,irc_packet *out) {
 	char msg[512];
 	int len;
 	if(strcmp(client->line->command,"PRIVMSG")!=0) return -1;
-	sscanf(client->line->message,"%127s %511s",&hash,&msg);
+	sscanf(client->line->message,"%127s %511s",&hash[0],&msg[0]);
 	if (strcmp(out->hash,hash)!=0) return 0; // invalid hash
-	base64_decode_alloc(msg,strlen(msg),&encd,&len);
+	base64_decode_alloc(msg,strlen(msg),&encd,(size_t*)&len);
 	if (encd==NULL)  return 0;
 	out->data=encd;
 	return strlen(out->data);
@@ -444,7 +443,7 @@ void parse_packet(irc_conn *client) {
 void parse_packet2(irc_conn *client) {
 	char nick[512]="";
 	char hash_request[512]="";
-	sscanf(client->line->message,"%511s request %511s",&nick,&hash_request);
+	sscanf(client->line->message,"%511s request %511s",&nick[0],&hash_request[0]);
 	if (strlen(nick)>0&&strlen(hash_request)>0) {
 		if (strcmp(nick,client->nick)!=0) return;
 		if (usng==0) {
