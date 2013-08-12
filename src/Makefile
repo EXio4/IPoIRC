@@ -8,7 +8,7 @@ $(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 tests:
-	$(CC) -o b64test -DTESTS -Wall -lm -lcrypto base64.c
+	$(CC) -o b64test -DTESTS -Wall base64.c -lm -lcrypto
 
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -o $@ -c $<
