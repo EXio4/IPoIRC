@@ -15,7 +15,7 @@
 
 void* irc_thread_zmq(void *data) {
     irc_thread_data *self = (irc_thread_data*)data;
-    unsigned char *sbuffer = malloc(sizeof(char)*MTU);
+    char *sbuffer = malloc(sizeof(char)*MTU);
     char *final_line = malloc(sizeof(char)*MTU*2); // worse thing that can happen?
     char *b64 = NULL;
     char **b64s = malloc(sizeof(char)*MTU);
@@ -48,16 +48,21 @@ void* irc_thread_zmq(void *data) {
             nbytes = MTU;
         }
 
-        b64 = base64(sbuffer, nbytes);
+        base64(sbuffer, nbytes, &b64);
         // split newlines
         lines = split(b64, b64s);
         for (i=0; i<lines; i++) {
-            char z[1];
-            memset(&z, 0, sizeof(z));
-            if (i == (lines-1)) z[0]=']';
-            snprintf(final_line, (MTU*2)-1, "%d:%s%s", self->session_id, b64s[i], z);
+            char *format;
+            if (i == (lines-1)) {
+                format = strdup("%d:%s]");
+            } else {
+                format = strdup("%d:%s]");
+            }
 
+            snprintf(final_line, (MTU*2)-1, format, self->session_id, b64s[i]);
             irc_cmd_msg(self->irc_s, IRC_CHANNEL, final_line);
+
+            free(format);
         }
         irc_debug(self, "@ %d", lines);
 
