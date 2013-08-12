@@ -42,29 +42,33 @@ void event_message(irc_session_t *session, const char *event, const char *origin
 
     if (params[1]) {
         lin = strdup(params[1]);
+
+        if (!strstr(lin, ":"))
+            goto clean; // skip messages without :
+
         tk = strtok(lin, search);
         id = atoi(tk);
 
         tk = strtok(NULL, search);
-        printf("SSSS %c\n", tk[strlen(tk)-1]);
         if (tk[strlen(tk)-1] == ']') { dn = 1; tk[strlen(tk)-1]='\0'; }
 
         strcat(ctx->buffer, tk);
 
         if (dn == 1) {
         // buffer contains base64 shit now, ready to "decode"
-            int len = 0;
+            int z, len = 0;
             char *st = NULL;
-            len = unbase64(ctx->buffer, &st);
-            printf("unbase64 returned %d\n", len);
+            len = debase64(ctx->buffer, &st);
+            irc_debug(self, "(decoding)base64 returned %d", len);
             if (id == self->session_id && len > 0) {
-                if (zmq_send(ctx->data, st, len, 0) < 0) {
-                    irc_debug(self, "error when trying to send a message to the tun (warning, we continue here!)", zmq_strerror(errno));
+                if ((z = zmq_send(ctx->data, st, len, 0)) < 0) {
+                    irc_debug(self, "error when trying to send a message to the tun (warning, this WILL result in missing packets!)", zmq_strerror(errno));
                 }
             }
             memset(ctx->buffer, 0, strlen(ctx->buffer));
             free(st);
         }
+        clean:
         free(lin);
     }
 
