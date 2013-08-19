@@ -15,10 +15,10 @@
 int base64(const char* message, int len, char** buffer) {
     BIO *bio, *b64;
     FILE* stream;
-    int encodedSize = 4*ceil((double)len/3);
-    *buffer = (char *)malloc(encodedSize+1);
 
-    stream = fmemopen(*buffer, encodedSize+1, "w");
+    *buffer = (char*)malloc(len*5+1); // avoiding problems with missing chars when splitting the strings (added newlines)
+
+    stream = fmemopen(*buffer, (len*5)+1, "w");
     b64 = BIO_new(BIO_f_base64());
     bio = BIO_new_fp(stream, BIO_NOCLOSE);
     bio = BIO_push(b64, bio);
