@@ -5,12 +5,10 @@
 #include <pthread.h>
 #include <zmq.h>
 
-// it is dumbnet in debian, but, how could we check if it is called dumbnet or dnet? (a define, when compiling?)
-#include <dumbnet.h>
-
 #include "ipoirc.h"
 #include "config.h"
 #include "helpers.h"
+#include "ltun.h"
 #include "tun.h"
 #include "tun_helpers.h"
 
@@ -40,7 +38,7 @@ void* tun_thread_zmq(void *data) {
         } else if (nbytes > MTU) {
             tun_debug(self, "warning: some message got truncated by %d (%d - %d), this means the MTU is too low for you!", nbytes - MTU, nbytes, MTU);
         }
-        tun_send(self->tun, sbuffer, nbytes);
+        ltun_write(self->tun, sbuffer, nbytes);
     }
     exit:
     pthread_exit(NULL);
@@ -62,7 +60,10 @@ void* tun_thread_dt(void *data) {
     // tell_to_other_threads_the_tun2irc_socket_is_binded
     tun_debug(self, "[data] created tun (data) thread!");
     while (1) {
-        int nbytes = tun_recv(self->tun, sbuffer, MTU);
+        int nbytes = ltun_read(self->tun, sbuffer, MTU);
+        if (nbytes > 0) {
+            tun_debug(self, "got %d from tun", nbytes);
+        }
         if (zmq_send(socket, sbuffer, nbytes, 0) < 0) {
             tun_debug(self, "error when trying to send a message to the irc thread (warning, we continue here!)", zmq_strerror(errno));
         }
@@ -76,14 +77,11 @@ void* tun_thread_dt(void *data) {
 
 void* tun_thread(void* data) {
     tun_thread_data *self = (tun_thread_data*)data;
-    struct addr a, b;
 
     pthread_t data_thread = {0};
     pthread_t zeromq_thread = {0};
 
-    addr_pton(self->h1, &a);
-    addr_pton(self->h2, &b);
-    self->tun = (void*)tun_open(&a, &b, MTU);
+    self->tun = (void*)ltun_alloc("irc%d", self->h1, self->h2);
 
     if (!self->tun) {
         tun_debug(self, "error start the tun interface, are you root?");

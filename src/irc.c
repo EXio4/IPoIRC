@@ -56,7 +56,7 @@ void* irc_thread_zmq(void *data) {
             if (i == (lines-1)) {
                 format = strdup("%d:%s]");
             } else {
-                format = strdup("%d:%s]");
+                format = strdup("%d:%s");
             }
 
             snprintf(final_line, (MTU*2)-1, format, self->session_id, b64s[i]);

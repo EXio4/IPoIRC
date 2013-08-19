@@ -1,7 +1,7 @@
 PREFIX = /usr/local
 CFLAGS ?= -Wall -O0 -g `dnet-config --cflags`
-LIBS = -lpthread `dnet-config --libs` -lzmq -lircclient -lcrypto -lm
-OBJS = ipoirc.o irc.o irc_events.o irc_helpers.o tun.o tun_helpers.o helpers.o base64.o
+LIBS = -lpthread `dnet-config --libs` -lzmq -lircclient -lcrypto -lm -lbsd
+OBJS = ipoirc.o irc.o irc_events.o irc_helpers.o ltun.o tun.o tun_helpers.o helpers.o base64.o
 TARGET = ipoirc
 
 $(TARGET): $(OBJS)

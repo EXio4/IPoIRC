@@ -15,7 +15,7 @@
 
 // internals
 
-// probably-mtu you will use
+// mtu you will use
 
 #define MTU 1500
 
