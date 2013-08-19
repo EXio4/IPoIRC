@@ -20,7 +20,7 @@
                                         }\
                                     } while(0);
 
-ltun_t* ltun_alloc(char *dev, char *local, char *remote) {
+ltun_t* ltun_alloc(char *dev, int mtu, char *local, char *remote) {
 
     int ln = strlen(dev);
     ltun_t *sf = malloc(sizeof(ltun_t));
@@ -71,7 +71,7 @@ ltun_t* ltun_alloc(char *dev, char *local, char *remote) {
     ifent.intf_flags = INTF_FLAG_UP|INTF_FLAG_POINTOPOINT;
     ifent.intf_addr = a;
     ifent.intf_dst_addr = b;
-    ifent.intf_mtu = 1500;
+    ifent.intf_mtu = mtu;
 
     if (intf_set(sf->intf, &ifent) < 0)
         fd = -1;
