@@ -60,7 +60,7 @@ void* irc_thread_zmq(void *data) {
             }
 
             snprintf(final_line, (MTU*2)-1, format, self->session_id, b64s[i]);
-            irc_cmd_msg(self->irc_s, IRC_CHANNEL, final_line);
+            irc_cmd_msg(self->irc_s, self->chan, final_line);
 
             free(format);
         }
@@ -113,9 +113,9 @@ void* irc_thread_net(void *data) {
     callbacks.event_ctcp_action = dump_event;
     callbacks.event_unknown = dump_event;
 
-    ctx.channel = strdup(IRC_CHANNEL);
+    ctx.channel = strdup(self->chan);
     ctx.nick = malloc(sizeof(char)*512);
-    snprintf(ctx.nick, 511, IRC_NICK, rand()+rand());
+    snprintf(ctx.nick, 511, self->nick, rand());
     ctx.self = self;
     ctx.buffer = malloc(sizeof(char)*MTU*4);
     ctx.data = socket; // WE ARE PASSING A NON-THREAD-SAFE SOCKET HERE! </redwarning>
@@ -130,7 +130,7 @@ void* irc_thread_net(void *data) {
     irc_debug(self, "created irc_session!");
     irc_set_ctx(self->irc_s, &ctx);
 
-    if (irc_connect (self->irc_s, IRC_NETWORK, 6667, IRC_PASSWD, ctx.nick, "ipoirc", "IP over IRC - coming soon(tm)")) {
+    if (irc_connect (self->irc_s, self->server, 6667, self->pass, ctx.nick, "ipoirc", "IP over IRC - http://github.com/EXio4/IPoIRC")) {
         irc_debug(self, "error when connecting to irc (%s)", irc_strerror(irc_errno(self->irc_s)));
         goto exit;
     }

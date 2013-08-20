@@ -11,7 +11,7 @@
 #include "ipoirc.h"
 
 void usage(char *h) {
-    printf("%s usage:\n%s <netid> <local_ip> <remote_ip>\n", h, h);
+    printf("%s usage:\n%s <netid> <irc_nick> <irc_pass> <irc_network> <irc_channel> <local_ip> <remote_ip>\n", h, h);
     exit(1);
 }
 
@@ -27,10 +27,14 @@ int main(int argc, char **argv) {
     pthread_t irc_threads[IRC_THREADS];
     pthread_t tun_threads[TUN_THREADS];
 
-    if (argc < 3) usage(argv[0]);
+    if (argc < 7) usage(argv[0]);
     int netid = atoi(argv[1]);
-    char *h1 = strdup(argv[2]);
-    char *h2 = strdup(argv[3]);
+    char *nick = strdup(argv[2]);
+    char *pass = strdup(argv[3]);
+    char *net = strdup(argv[4]);
+    char *chan = strdup(argv[5]);
+    char *h1 = strdup(argv[6]);
+    char *h2 = strdup(argv[7]);
 
     int i=0;
 
@@ -46,6 +50,10 @@ int main(int argc, char **argv) {
 
     for (i=0; i<IRC_THREADS; i++) {
         irc_data[i].session_id = netid; // and "socket id" (used in irc <-> irc communication)
+        irc_data[i].nick = nick;
+        irc_data[i].pass = pass;
+        irc_data[i].server = net;
+        irc_data[i].chan = chan;
         irc_data[i].irc_s = NULL;
     }
 
