@@ -47,7 +47,6 @@ void* irc_thread_zmq(void *data) {
             irc_debug(self, "warning: some message got truncated by %d (%d - %d), this means the MTU is too low for you!", nbytes - MTU, nbytes, MTU);
             nbytes = MTU;
         }
-        usleep(10000*(MTU-nbytes)+250000);
 
         base64(sbuffer, nbytes, &b64);
         // split newlines
@@ -64,7 +63,6 @@ void* irc_thread_zmq(void *data) {
             irc_cmd_msg(self->irc_s, self->chan, final_line);
 
             free(format);
-            usleep(((i/6) * 200000 )+(i*100000));
         }
         irc_debug(self, "@ %d", lines);
 
