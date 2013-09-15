@@ -3,6 +3,8 @@
 #include <string.h>
 #include <zmq.h>
 #include <libircclient/libircclient.h>
+#include <pcre.h>
+#include "config.h"
 #include "base64.h"
 #include "ipoirc.h"
 #include "irc.h"
@@ -28,50 +30,85 @@ void event_join(irc_session_t *session, const char *event, const char *origin, c
     free(buffer); */
 }
 
+
+// helper function for event_message
+int __parse(irc_thread_data *self, char *lin, char* netid, char *data, int *vc) {
+
+    snprintf(netid, 511, "%.*s", vc[3] - vc[2], lin + vc[2]);
+
+    if (strcmp(netid, self->netid)) {
+        return 0; // invalid id
+    }
+
+    snprintf(data , 511, "%.*s", vc[5] - vc[4], lin + vc[4]);
+
+    return 1;
+}
+
 void event_message(irc_session_t *session, const char *event, const char *origin, const char **params, unsigned int count) {
+#define parse   ((__parse(self, lin, netid, data, vc)))
+#define DONE    42
+
     irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
     irc_thread_data *self = (irc_thread_data*)ctx->self;
 
-    // this is insanely thread-unsafe, so this needs a rework, but lazy as fuck.
+    char *lin    = NULL;
+    char *netid  = NULL;
+    char *data   = NULL;
 
-    char *tk;
-    char *search = ":";
-    char *lin = NULL;
-
-    int id, dn = 0;
+    char *st = NULL;
 
     if (params[1]) {
-        lin = strdup(params[1]);
+        lin   = strdup(params[1]);
+        netid = malloc(sizeof(char)*512);
+        data  = malloc(sizeof(char)*512);
 
-        if (!strstr(lin, ":"))
-            goto clean; // skip messages without :
+        //if (!netid || !data || !lin) goto clean;
 
-        tk = strtok(lin, search);
-        id = atoi(tk);
+        int vc[9];
 
-        tk = strtok(NULL, search);
-        if (tk[strlen(tk)-1] == ']') { dn = 1; tk[strlen(tk)-1]='\0'; }
+        int rc = 0;
 
-        strcat(ctx->buffer, tk);
+        // note: we assume the regex matches *always* the id and the data, for making the code smaller
 
-        if (dn == 1) {
-        // buffer contains base64 shit now, ready to "decode"
-            int z, len = 0;
-            char *st = NULL;
-            len = debase64(ctx->buffer, &st);
-            irc_debug(self, "(decoding)base64 returned %d", len);
-            if (id == self->session_id && len > 0) {
-                if ((z = zmq_send(ctx->data, st, len, 0)) < 0) {
-                    irc_debug(self, "error when trying to send a message to the tun (warning, this WILL result in missing packets!)", zmq_strerror(errno));
-                }
-            }
-            memset(ctx->buffer, 0, strlen(ctx->buffer));
-            free(st);
+        if ((rc = pcre_exec(self->regex_final, NULL, lin, (int)strlen(lin), 0, 0, vc, 9)) >= 0 &&
+            !parse)
+                goto clean; // failed parsing
+
+        if (rc >= 0) rc = DONE;
+
+        if (rc < 0 &&
+            (rc = pcre_exec(self->regex, NULL, lin, (int)strlen(lin), 0, 0, vc, 9)) >= 0 &&
+            !parse)
+                goto clean; // no match with the final nor the "normal"
+
+        snprintf(ctx->buffer, MTU*4-1, "%s%s", ctx->buffer, data);
+
+        if (rc != DONE) goto clean; // data already added, but there is still more data to come
+
+        int z, len = 0;
+        len = debase64(ctx->buffer, &st);
+        if (len < 1) {
+            irc_debug(self, "error when decoding base64 buffer (%d)", len);
+            goto iclean;
         }
-        clean:
-        free(lin);
-    }
 
+        if (strcmp(netid, self->netid) == 0) {
+            if ((z = zmq_send(ctx->data, st, len, 0)) < 0) {
+                irc_debug(self, "error when trying to send a message to the tun (warning, this WILL result in missing packets!)", zmq_strerror(errno));
+            }
+        }
+        iclean:
+        memset(ctx->buffer, 0, strlen(ctx->buffer));
+
+        clean:
+        if (lin) free(lin);
+        if (netid) free(netid);
+        if (data) free(data);
+        if (st) free(st);
+    }
+#undef parse
+#undef DONE
 }
 
 void dump_event (irc_session_t * session, const char * event, const char * origin, const char ** params, unsigned int count)

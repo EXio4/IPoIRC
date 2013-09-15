@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
     pthread_t tun_threads[TUN_THREADS];
 
     if (argc < 7) usage(argv[0]);
-    int netid = atoi(argv[1]);
+    char *netid = strdup(argv[1]);
     char *nick = strdup(argv[2]);
     char *pass = strdup(argv[3]);
     char *net = strdup(argv[4]);
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     }
 
     for (i=0; i<IRC_THREADS; i++) {
-        irc_data[i].session_id = netid; // and "socket id" (used in irc <-> irc communication)
+        irc_data[i].netid = netid; // and "socket id" (used in irc <-> irc communication)
         irc_data[i].nick = nick;
         irc_data[i].pass = pass;
         irc_data[i].server = net;

@@ -15,7 +15,9 @@ typedef struct shared_thread_data {
 
 typedef struct irc_thread_data {
     shared_thread_data  d;
-    int                 session_id;
+    char                *netid;
+    void                *regex;
+    void                *regex_final;
     char                *nick, *pass;
     char                *server, *chan;
     irc_session_t       *irc_s;

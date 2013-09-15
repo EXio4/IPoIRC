@@ -5,6 +5,7 @@
 #include <sys/select.h>
 #include <zmq.h>
 #include <libircclient/libircclient.h>
+#include <pcre.h>
 #include "config.h"
 #include "irc.h"
 #include "irc_events.h"
@@ -52,14 +53,14 @@ void* irc_thread_zmq(void *data) {
         // split newlines
         lines = split(b64, b64s);
         for (i=0; i<lines; i++) {
-            char *format;
+            char *format = malloc(sizeof(char)*16);
             if (i == (lines-1)) {
-                format = strdup("%d:%s]");
+                snprintf(format, 15, "%s", FORMAT_FINAL);
             } else {
-                format = strdup("%d:%s");
+                snprintf(format, 15, "%s", FORMAT);
             }
 
-            snprintf(final_line, (MTU*2)-1, format, self->session_id, b64s[i]);
+            snprintf(final_line, (MTU*2)-1, format, self->netid, b64s[i]);
             irc_cmd_msg(self->irc_s, self->chan, final_line);
 
             free(format);
@@ -157,6 +158,27 @@ void* irc_thread(void* data) {
     pthread_t network_thread;
     pthread_t zeromq_thread;
 
+    {
+
+        // should be compiled in main thread, not here
+        const char *error;
+        int erroroffset;
+
+        self->regex = (void*)pcre_compile(REGEX, 0, &error, &erroroffset, NULL);
+
+        if (!self->regex) {
+            irc_debug(self, "(irc_thread) error compiling regex (%s)", REGEX);
+            goto exit;
+        }
+
+        self->regex_final = (void*)pcre_compile(REGEX_FINAL, 0, &error, &erroroffset, NULL);
+        if (!self->regex_final) {
+            irc_debug(self, "(irc_thread) error compiling regex (%s)", REGEX);
+            goto exit;
+        }
+
+    }
+
     int n_th = pthread_create(&network_thread, NULL, irc_thread_net, (void*)self);
     if (n_th) {
         irc_debug(self, "error when creating irc thread");
@@ -169,7 +191,7 @@ void* irc_thread(void* data) {
         goto exit;
     }
 
-    pthread_join(network_thread, NULL); // we don't care about the "zeromq one"!
+    pthread_join(network_thread, NULL);
 
     exit:
 
