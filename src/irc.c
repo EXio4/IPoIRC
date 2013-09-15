@@ -76,6 +76,8 @@ void* irc_thread_zmq(void *data) {
         free(sbuffer);
     if (final_line)
         free(final_line);
+    if (socket)
+        zmq_close(socket);
 
     pthread_exit(NULL);
 }
@@ -138,16 +140,14 @@ void* irc_thread_net(void *data) {
 
     sleep(1); // wait for the network to answer THIS SHOULD BE DONE IN A RIGHT WAY!
 
-    irc_debug(self, "irc_run!");
     int rc = irc_run(self->irc_s);
-
-    irc_debug(self, "irc run finished with %d", rc);
-
-    irc_debug(self, "in case of error: %s", irc_strerror(irc_errno(self->irc_s)));
 
     exit:
     if (self->irc_s) {
         irc_destroy_session(self->irc_s);
+    }
+    if (socket) {
+        zmq_close(socket);
     }
     pthread_exit(NULL);
 }
@@ -179,19 +179,24 @@ void* irc_thread(void* data) {
 
     }
 
-    int n_th = pthread_create(&network_thread, NULL, irc_thread_net, (void*)self);
-    if (n_th) {
-        irc_debug(self, "error when creating irc thread");
-        goto exit;
-    }
-
+    int n_th = 0;
     int z_th = pthread_create(&zeromq_thread, NULL, irc_thread_zmq, (void*)self);
+
     if (z_th) {
         irc_debug(self, "error when creating zmq thread");
         goto exit;
     }
 
-    pthread_join(network_thread, NULL);
+    while (1) {
+        pthread_create(&network_thread, NULL, irc_thread_net, (void*)self);
+        if (n_th) {
+            irc_debug(self, "error when creating irc thread");
+            goto exit;
+        }
+        pthread_join(network_thread, NULL);
+        irc_debug(self, "irc thread finished, reconnecting in 2s..");
+        sleep(2);
+    }
 
     exit:
 

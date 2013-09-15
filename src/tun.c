@@ -41,6 +41,8 @@ void* tun_thread_zmq(void *data) {
         ltun_write(self->tun, sbuffer, nbytes);
     }
     exit:
+    if (socket)
+        zmq_close(socket);
     pthread_exit(NULL);
 }
 
@@ -70,7 +72,8 @@ void* tun_thread_dt(void *data) {
     }
 
     exit:
-
+    if (socket)
+        zmq_close(socket);
     pthread_exit(NULL);
 }
 
