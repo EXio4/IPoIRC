@@ -71,16 +71,17 @@ void event_message(irc_session_t *session, const char *event, const char *origin
 
         // note: we assume the regex matches *always* the id and the data, for making the code smaller
 
-        if ((rc = pcre_exec(self->regex_final, NULL, lin, (int)strlen(lin), 0, 0, vc, 9)) >= 0 &&
-            !parse)
+        rc = pcre_exec(self->regex_final, NULL, lin, (int)strlen(lin), 0, 0, vc, 9);
+        if (rc >= 0 && !parse)
                 goto clean; // failed parsing
 
         if (rc >= 0) rc = DONE;
 
-        if (rc < 0 &&
-            (rc = pcre_exec(self->regex, NULL, lin, (int)strlen(lin), 0, 0, vc, 9)) >= 0 &&
-            !parse)
+        if (rc < 0) {
+            rc = pcre_exec(self->regex, NULL, lin, (int)strlen(lin), 0, 0, vc, 9);
+            if (rc < 0 || !parse)
                 goto clean; // no match with the final nor the "normal"
+        }
 
         snprintf(ctx->buffer, MTU*4-1, "%s%s", ctx->buffer, data);
 
