@@ -14,20 +14,20 @@ void event_connect(irc_session_t *session, const char *event, const char *origin
     irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
     irc_thread_data *self = (irc_thread_data*)ctx->self;
 
+    // shutup compiler complaining about unused variables
+    (void) event; (void) origin; (void) params; (void) count;
+
     irc_debug(self, "(%s) connected to irc", ctx->nick);
     irc_cmd_join(session, ctx->channel, 0);
 }
 
 void event_join(irc_session_t *session, const char *event, const char *origin, const char **params, unsigned int count) {
-/*    irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
+    irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
     irc_thread_data *self = (irc_thread_data*)ctx->self;
 
-    irc_cmd_user_mode(session, "+i");
-    char *buffer = malloc(sizeof(char) * 512);
-    // this is defined on-bot-connect time
-    //snprintf(buffer, 511, "IPOIRC +%d", self->session_id);
-    //irc_cmd_msg(session, params[0], buffer);
-    free(buffer); */
+    // shutup compiler complaining about unused variables
+    (void) event; (void) origin; (void) params; (void) count;
+    (void) self;
 }
 
 
@@ -51,6 +51,9 @@ void event_message(irc_session_t *session, const char *event, const char *origin
 
     irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
     irc_thread_data *self = (irc_thread_data*)ctx->self;
+
+    // shutup compiler complaining about unused variables
+    (void) event; (void) origin; (void) count;
 
     char *lin    = NULL;
     char *netid  = NULL;
@@ -110,26 +113,4 @@ void event_message(irc_session_t *session, const char *event, const char *origin
     }
 #undef parse
 #undef DONE
-}
-
-void dump_event (irc_session_t * session, const char * event, const char * origin, const char ** params, unsigned int count)
-{
-    irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
-    irc_thread_data *self = (irc_thread_data*)ctx->self;
-
-    char buf[512];
-    int cnt;
-
-    buf[0] = '\0';
-
-    for ( cnt = 0; cnt < count; cnt++ )
-    {
-        if ( cnt )
-            strcat (buf, "|");
-
-        strcat (buf, params[cnt]);
-    }
-
-
-    irc_debug(self, "Event \"%s\", origin: \"%s\", params: %d [%s]", event, origin ? origin : "NULL", cnt, buf);
 }

@@ -23,10 +23,13 @@ void* irc_thread_zmq(void *data) {
     int i = 0;
     int lines = 0;
 
+    void *socket = NULL;
+
     if (!sbuffer) goto exit;
     if (!final_line) goto exit;
 
-    void *socket = zmq_socket(self->d.context, ZMQ_PAIR); // client of the tun_socket
+    socket = zmq_socket(self->d.context, ZMQ_PAIR); // client of the tun_socket
+
     sleep(1); // wait for other threads and shitz, TODO: make a proper way with semaphores and shitz
     int ret = zmq_connect(socket, "inproc://#tun_to_#irc");
     if (ret) {
@@ -35,7 +38,6 @@ void* irc_thread_zmq(void *data) {
     }
 
     while (1) {
-        irc_debug(self, ">> zmq_recv <<");
         memset(sbuffer, 0, MTU);
         int nbytes = zmq_recv(socket, sbuffer, MTU, 0);
 
@@ -65,7 +67,6 @@ void* irc_thread_zmq(void *data) {
 
             free(format);
         }
-        irc_debug(self, "@ %d", lines);
 
         free(b64);
     }
@@ -103,19 +104,6 @@ void* irc_thread_net(void *data) {
     callbacks.event_privmsg = event_message;
     callbacks.event_channel = event_message;
 
-    callbacks.event_nick = dump_event;
-    callbacks.event_quit = dump_event;
-    callbacks.event_part = dump_event;
-    callbacks.event_mode = dump_event;
-    callbacks.event_topic = dump_event;
-    callbacks.event_kick = dump_event;
-    callbacks.event_notice = dump_event;
-    callbacks.event_invite = dump_event;
-    callbacks.event_umode = dump_event;
-    callbacks.event_ctcp_rep = dump_event;
-    callbacks.event_ctcp_action = dump_event;
-    callbacks.event_unknown = dump_event;
-
     ctx.channel = strdup(self->chan);
     ctx.nick = malloc(sizeof(char)*512);
     snprintf(ctx.nick, 511, self->nick, rand());
@@ -141,6 +129,8 @@ void* irc_thread_net(void *data) {
     sleep(1); // wait for the network to answer THIS SHOULD BE DONE IN A RIGHT WAY!
 
     int rc = irc_run(self->irc_s);
+
+    (void) rc;
 
     exit:
     if (self->irc_s) {

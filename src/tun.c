@@ -16,9 +16,10 @@ void* tun_thread_zmq(void *data) {
     tun_thread_data *self = (tun_thread_data*)data;
 
     char *sbuffer = malloc(sizeof(char)*MTU);
-    if (!sbuffer) goto exit;
+    void *socket = NULL;
 
-    void *socket = zmq_socket(self->d.context, ZMQ_PAIR); // client of the tun_socket
+    if (!sbuffer) goto exit;
+    socket = zmq_socket(self->d.context, ZMQ_PAIR); // client of the tun_socket
     sleep(1); // wait for other threads and shitz, TODO: make a proper way with semaphores and shitz
     int ret = zmq_connect(socket, "inproc://#irc_to_#tun");
     if (ret) {

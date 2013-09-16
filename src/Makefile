@@ -1,5 +1,5 @@
 PREFIX = /usr/local
-CFLAGS ?= -Wall -O0 -g `dnet-config --cflags`
+CFLAGS ?= -Wall -Wextra -O0 -g `dnet-config --cflags`
 LIBS = -lpthread `dnet-config --libs` -lzmq -lircclient -lcrypto -lm -lbsd -lpcre
 OBJS = ipoirc.o irc.o irc_events.o irc_helpers.o ltun.o tun.o tun_helpers.o helpers.o base64.o
 TARGET = ipoirc
