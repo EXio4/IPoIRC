@@ -28,15 +28,16 @@ int main(int argc, char **argv) {
     pthread_t tun_threads[TUN_THREADS];
 
     if (argc < 7) usage(argv[0]);
-    char *netid = strdup(argv[1]);
-    char *nick = strdup(argv[2]);
-    char *pass = strdup(argv[3]);
-    char *net = strdup(argv[4]);
-    char *chan = strdup(argv[5]);
-    char *h1 = strdup(argv[6]);
-    char *h2 = strdup(argv[7]);
 
-    int i=0;
+    char *netid = argv[1];
+    char *nick  = argv[2];
+    char *pass  = argv[3];
+    char *net   = argv[4];
+    char *chan  = argv[5];
+    char *h1    = argv[6];
+    char *h2    = argv[7];
+
+    int i       = 0;
 
     // define shared data (context and thread id)
     for (i=0; i<IRC_THREADS; i++) {
