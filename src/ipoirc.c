@@ -22,10 +22,10 @@ int main(int argc, char **argv) {
     void* context = zmq_ctx_new();
 
     irc_thread_data irc_data[IRC_THREADS];
-    tun_thread_data tun_data[TUN_THREADS];
+    tun_thread_data tun_data;
 
     pthread_t irc_threads[IRC_THREADS];
-    pthread_t tun_threads[TUN_THREADS];
+    pthread_t tun_threadS;
 
     if (argc < 7) usage(argv[0]);
 
@@ -44,10 +44,9 @@ int main(int argc, char **argv) {
         irc_data[i].d.id = i;
         irc_data[i].d.context = context;
     }
-    for (i=0; i<TUN_THREADS; i++) {
-        tun_data[i].d.id = i;
-        tun_data[i].d.context = context;
-    }
+
+    tun_data.d.id = -1;
+    tun_data.d.context = context;
 
     for (i=0; i<IRC_THREADS; i++) {
         irc_data[i].netid = netid; // and "socket id" (used in irc <-> irc communication)
@@ -59,12 +58,17 @@ int main(int argc, char **argv) {
     }
 
 
-    for (i=0; i<TUN_THREADS; i++) {
-        tun_data[i].h1 = h1;
-        tun_data[i].h2 = h2;
-    }
+    tun_data.h1 = h1;
+    tun_data.h2 = h2;
 
     int rc = 0;
+
+    rc = pthread_create(&tun_threadS, NULL, tun_thread, &tun_data);
+    if (rc) {
+        // something went wrong!
+    }
+
+    sleep(1);
 
     for (i=0; i<IRC_THREADS; i++) {
         rc = pthread_create(&irc_threads[i], NULL, irc_thread, &irc_data[i]);
@@ -72,20 +76,11 @@ int main(int argc, char **argv) {
             // something went wrong!
         }
     }
-    for (i=0; i<TUN_THREADS; i++) {
-        rc = pthread_create(&tun_threads[i], NULL, tun_thread, &tun_data[i]);
-        if (rc) {
-            // something went wrong!
-        }
-    }
 
-    // wait for the threads
-    for (i=0; i<IRC_THREADS; i++) {
-        pthread_join(irc_threads[i], NULL);
-    }
-    for (i=0; i<TUN_THREADS; i++) {
-        pthread_join(tun_threads[i], NULL);
-    }
+
+
+
+    pthread_join(tun_threadS, NULL);
 
     return 0;
 }

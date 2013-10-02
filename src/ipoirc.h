@@ -4,10 +4,10 @@
 #include <pthread.h>
 #include <libircclient/libircclient.h>
 
-#define IRC_THREADS 1 // only one irc thread for now; this should be changed in a far-away-future
-#define TUN_THREADS 1 // only one tun thread, this shouldn't even have more than one thread
+#define IRC_THREADS 1 /* only one irc thread for now; more actually work but
+                         need protocol tweaks for not having clients sending
+                         data to themselves */
 
-// TODO: add a shared_data for reducing this code copy
 typedef struct shared_thread_data {
     int id;
     void *context;

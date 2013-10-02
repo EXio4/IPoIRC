@@ -8,12 +8,15 @@ void tun_debug(tun_thread_data *self, char * format, ...) {
     time_t curtime = time (NULL);
     struct tm *loctime = localtime(&curtime);
     char timestamp[128];
-    strftime(timestamp, 128, "%y-%m-%d %H:%M:%S", loctime);
+    strftime(timestamp, 127, "%y-%m-%d %H:%M:%S", loctime);
 
     char buffer[512];
+    (void)self;
     va_list args;
     va_start(args, format);
+
     vsnprintf(buffer, sizeof(buffer), format, args);
-    printf("%s | [tun#%d] %s\n", timestamp, self->d.id, buffer);
+    printf("%s | [tun] %s\n", timestamp, buffer);
+
     va_end(args);
 }

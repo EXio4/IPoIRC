@@ -28,9 +28,8 @@ void* irc_thread_zmq(void *data) {
     if (!sbuffer) goto exit;
     if (!final_line) goto exit;
 
-    socket = zmq_socket(self->d.context, ZMQ_PAIR); // client of the tun_socket
+    socket = zmq_socket(self->d.context, ZMQ_PULL); // client of the tun_socket
 
-    sleep(1); // wait for other threads and shitz, TODO: make a proper way with semaphores and shitz
     int ret = zmq_connect(socket, "inproc://#tun_to_#irc");
     if (ret) {
         irc_debug(self, "(irc_thread_zmq) error when connecting to IPC socket - %s", zmq_strerror(errno));
@@ -89,8 +88,8 @@ void* irc_thread_net(void *data) {
     irc_ctx_t ctx;
     irc_session_t *irc_s;
 
-    void *socket = zmq_socket(self->d.context, ZMQ_PAIR); // "server" from irc -> tun
-    int ret = zmq_bind(socket, "inproc://#irc_to_#tun");
+    void *socket = zmq_socket(self->d.context, ZMQ_PUSH); // "server" from irc -> tun
+    int ret = zmq_connect(socket, "inproc://#irc_to_#tun");
 
     if (ret) {
         irc_debug(self, "(irc_thread_net) error when creating IPC socket - %s", zmq_strerror(errno));

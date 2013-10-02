@@ -19,9 +19,8 @@ void* tun_thread_zmq(void *data) {
     void *socket = NULL;
 
     if (!sbuffer) goto exit;
-    socket = zmq_socket(self->d.context, ZMQ_PAIR); // client of the tun_socket
-    sleep(1); // wait for other threads and shitz, TODO: make a proper way with semaphores and shitz
-    int ret = zmq_connect(socket, "inproc://#irc_to_#tun");
+    socket = zmq_socket(self->d.context, ZMQ_PULL); // client of the tun_socket
+    int ret = zmq_bind(socket, "inproc://#irc_to_#tun");
     if (ret) {
         tun_debug(self, "(tun_thread_zmq) error when connecting to IPC socket - %s", zmq_strerror(errno));
         goto exit;
@@ -49,7 +48,7 @@ void* tun_thread_zmq(void *data) {
 
 void* tun_thread_dt(void *data) {
     tun_thread_data *self = (tun_thread_data*)data;
-    void *socket = zmq_socket(self->d.context, ZMQ_PAIR);
+    void *socket = zmq_socket(self->d.context, ZMQ_PUSH);
     int rc = zmq_bind(socket, "inproc://#tun_to_#irc");
 
     char *sbuffer = malloc(sizeof(char)*MTU);
