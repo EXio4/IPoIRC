@@ -11,7 +11,7 @@
 #include "ipoirc.h"
 
 void usage(char *h) {
-    printf("%s usage:\n%s <netid> <irc_nick> <irc_pass> <irc_network> <irc_channel> <local_ip> <remote_ip>\n", h, h);
+    printf("%s usage:\n%s <netid> <irc_nick> <irc_network> <irc_pass>  <irc_channel> <local_ip> <remote_ip>\n", h, h);
     exit(1);
 }
 
@@ -31,13 +31,19 @@ int main(int argc, char **argv) {
 
     char *netid = argv[1];
     char *nick  = argv[2];
-    char *pass  = argv[3];
-    char *net   = argv[4];
+    char *net   = argv[3];
+    char *pass  = argv[4];
     char *chan  = argv[5];
     char *h1    = argv[6];
     char *h2    = argv[7];
 
     int i       = 0;
+
+
+    if (strcmp(pass, "-") == 0) {
+        pass = NULL;
+    }
+
 
     // define shared data (context and thread id)
     for (i=0; i<IRC_THREADS; i++) {
