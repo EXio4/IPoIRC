@@ -36,8 +36,8 @@ int __parse(irc_thread_data *self, char *lin, char* netid, char *data, int *vc) 
 
     snprintf(netid, 511, "%.*s", vc[3] - vc[2], lin + vc[2]);
 
-    if (strcmp(netid, self->netid)) {
-        return 0; // invalid id
+    if (strcmp(netid, self->netid) == 0) {
+        return 0; // same id means same client, ignore
     }
 
     snprintf(data , 511, "%.*s", vc[5] - vc[4], lin + vc[4]);

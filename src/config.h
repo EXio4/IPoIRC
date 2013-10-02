@@ -1,13 +1,13 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#define FORMAT  "%s: %s"
+#define FORMAT  "@%s: %s"
 
-#define FORMAT_FINAL "%s::%s"
+#define FORMAT_FINAL "@%s::%s"
 
-#define REGEX   "^([a-zA-Z0-9]+): (.+)"
+#define REGEX   "^@([a-zA-Z0-9]+): (.+)"
 
-#define REGEX_FINAL "^([a-zA-Z0-9]+)::(.+)$"
+#define REGEX_FINAL "^@([a-zA-Z0-9]+)::(.+)$"
 
 // internals
 
