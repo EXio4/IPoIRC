@@ -33,7 +33,7 @@ As IPoIRC's protocol changes very fast, this is here as a warning, and as a plac
 
 #### Dependencies
 
-IPoIRC is actually using a fixed Makefile, you need the following deps (using debian names)
+IPoIRC is actually using a fixed Makefile, you need the following deps (using debian names):
 
 * libdumbnet-dev
 * libssl-dev
