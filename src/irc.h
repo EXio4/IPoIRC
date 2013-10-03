@@ -1,12 +1,19 @@
 #ifndef _IRC_H
 #define _IRC_H
 #include "ipoirc.h"
+#include "uthash.h"
+
+typedef struct dbuf {
+    char             nick[128];
+    char            *dt;
+    UT_hash_handle   hh;
+} dbuf;
 
 typedef struct irc_ctx_t {
     char                *channel;
     char                *nick;
     irc_thread_data     *self;
-    char                *buffer;
+    dbuf                *ds;
     void                *data;
 } irc_ctx_t;
 

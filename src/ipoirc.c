@@ -11,7 +11,7 @@
 #include "ipoirc.h"
 
 void usage(char *h) {
-    printf("%s usage:\n%s <netid> <irc_nick> <irc_network> <irc_pass>  <irc_channel> <local_ip> <remote_ip>\n", h, h);
+    printf("%s usage:\n%s <netid> <irc_nick> <irc_network> <irc_pass> <irc_channel> <local_ip> <remote_ip>\n", h, h);
     exit(1);
 }
 
@@ -38,11 +38,6 @@ int main(int argc, char **argv) {
     char *h2    = argv[7];
 
     int i       = 0;
-
-
-    if (strcmp(pass, "-") == 0) {
-        pass = NULL;
-    }
 
 
     // define shared data (context and thread id)
@@ -76,14 +71,14 @@ int main(int argc, char **argv) {
 
     sleep(1);
 
+    // we could drop privs here?
+
     for (i=0; i<IRC_THREADS; i++) {
         rc = pthread_create(&irc_threads[i], NULL, irc_thread, &irc_data[i]);
         if (rc) {
             // something went wrong!
         }
     }
-
-
 
 
     pthread_join(tun_threadS, NULL);

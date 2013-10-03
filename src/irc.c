@@ -99,16 +99,16 @@ void* irc_thread_net(void *data) {
     memset (&callbacks, 0, sizeof(callbacks));
 
     callbacks.event_connect = event_connect;
-    callbacks.event_join = event_join;
+    callbacks.event_join    = event_join;
     callbacks.event_privmsg = event_message;
     callbacks.event_channel = event_message;
 
     ctx.channel = strdup(self->chan);
-    ctx.nick = malloc(sizeof(char)*512);
-    snprintf(ctx.nick, 511, self->nick, rand());
-    ctx.self = self;
-    ctx.buffer = malloc(sizeof(char)*MTU*4);
-    ctx.data = socket; // WE ARE PASSING A NON-THREAD-SAFE SOCKET HERE! </redwarning>
+    ctx.nick    = malloc(sizeof(char)*512);
+    snprintf(ctx.nick, 511, self->nick, rand()%2048+1);
+    ctx.self    = self;
+    ctx.ds      = NULL;
+    ctx.data    = socket; // WE ARE PASSING A NON-THREAD-SAFE SOCKET HERE! </redwarning>
 
     irc_s = irc_create_session(&callbacks);
     if (!irc_s) {
@@ -117,8 +117,9 @@ void* irc_thread_net(void *data) {
     }
     self->irc_s = irc_s;
 
-    irc_debug(self, "created irc_session!");
     irc_set_ctx(self->irc_s, &ctx);
+
+    irc_debug(self, "created irc_session, connecting to %s:6667 as %s!", self->server, ctx.nick);
 
     if (irc_connect (self->irc_s, self->server, 6667, self->pass, ctx.nick, "ipoirc", "IP over IRC - http://github.com/EXio4/IPoIRC")) {
         irc_debug(self, "error when connecting to irc (%s)", irc_strerror(irc_errno(self->irc_s)));
@@ -127,9 +128,7 @@ void* irc_thread_net(void *data) {
 
     sleep(1); // wait for the network to answer THIS SHOULD BE DONE IN A RIGHT WAY!
 
-    int rc = irc_run(self->irc_s);
-
-    (void) rc;
+    (void) irc_run(self->irc_s);
 
     exit:
     if (self->irc_s) {
