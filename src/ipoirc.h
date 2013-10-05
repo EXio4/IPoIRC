@@ -4,9 +4,7 @@
 #include <pthread.h>
 #include <libircclient/libircclient.h>
 
-#define IRC_THREADS 1 /* only one irc thread for now; more actually work but
-                         need protocol tweaks for not having clients sending
-                         data to themselves */
+#define IRC_THREADS 2 // constant-time variable
 
 typedef struct shared_thread_data {
     int id;

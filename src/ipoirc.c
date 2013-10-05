@@ -50,12 +50,12 @@ int main(int argc, char **argv) {
     tun_data.d.context = context;
 
     for (i=0; i<IRC_THREADS; i++) {
-        irc_data[i].netid = netid; // and "socket id" (used in irc <-> irc communication)
-        irc_data[i].nick = nick;
-        irc_data[i].pass = pass;
-        irc_data[i].server = net;
-        irc_data[i].chan = chan;
-        irc_data[i].irc_s = NULL;
+        irc_data[i].netid   = netid; // and "socket id" (used in irc <-> irc communication)
+        irc_data[i].nick    = nick;
+        irc_data[i].pass    = pass;
+        irc_data[i].server  = net;
+        irc_data[i].chan    = chan;
+        irc_data[i].irc_s   = NULL;
     }
 
 

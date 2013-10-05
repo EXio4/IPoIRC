@@ -4,11 +4,15 @@
 #include <zmq.h>
 #include <libircclient/libircclient.h>
 #include <pcre.h>
+#include "constants.h"
 #include "config.h"
 #include "base64.h"
 #include "ipoirc.h"
 #include "irc.h"
 #include "irc_helpers.h"
+
+// helper macro for event_message
+#define parse   ((__parse(self, lin, netid, data, vc)))
 
 void event_connect(irc_session_t *session, const char *event, const char *origin, const char **params, unsigned int count) {
     irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
@@ -46,14 +50,12 @@ int __parse(irc_thread_data *self, char *lin, char* netid, char *data, int *vc) 
 }
 
 void event_message(irc_session_t *session, const char *event, const char *origin, const char **params, unsigned int count) {
-#define parse   ((__parse(self, lin, netid, data, vc)))
-#define DONE    42
 
     irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
     irc_thread_data *self = (irc_thread_data*)ctx->self;
 
     // shutup compiler complaining about unused variables
-    (void) event; (void) origin; (void) count;
+    (void) event; (void) count;
 
     char *lin    = NULL;
     char *netid  = NULL;
@@ -65,6 +67,8 @@ void event_message(irc_session_t *session, const char *event, const char *origin
     dbuf* buf = NULL;
 
     irc_target_get_nick(origin, nick, 255);
+
+    if (self->d.id != 0) goto out;
 
     if (params[1]) {
         lin   = strdup(params[1]);
@@ -123,7 +127,10 @@ void event_message(irc_session_t *session, const char *event, const char *origin
         if (data) free(data);
         if (st) free(st);
     }
+
+    out:
     if (nick) free(nick);
-#undef parse
-#undef DONE
 }
+
+
+#undef parse
