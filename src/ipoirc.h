@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <libircclient/libircclient.h>
 
-#define IRC_THREADS 2 // constant-time variable
+#define MAX_IRC_THREADS 20
 
 typedef struct shared_thread_data {
     int id;
@@ -18,13 +18,13 @@ typedef struct irc_thread_data {
     void                *regex_final;
     char                *nick, *pass;
     char                *server, *chan;
+    int                 port;
     irc_session_t       *irc_s;
 } irc_thread_data;
 
 typedef struct tun_thread_data {
     shared_thread_data  d;
     void                *tun;
-    char                *h1, *h2;
     pthread_mutex_t     mutex;
 } tun_thread_data;
 

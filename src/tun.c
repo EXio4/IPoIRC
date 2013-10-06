@@ -84,12 +84,6 @@ void* tun_thread(void* data) {
     pthread_t data_thread = {0};
     pthread_t zeromq_thread = {0};
 
-    self->tun = (void*)ltun_alloc("irc%d", MTU, self->h1, self->h2);
-
-    if (!self->tun) {
-        tun_debug(self, "error start the tun interface, are you root?");
-        goto exit;
-    }
 
     int d_th = pthread_create(&data_thread, NULL, tun_thread_dt, (void*)self);
     if (d_th) {

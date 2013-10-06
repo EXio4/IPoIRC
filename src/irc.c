@@ -121,7 +121,7 @@ void* irc_thread_net(void *data) {
 
     irc_debug(self, "created irc_session, connecting to %s:6667 as %s!", self->server, ctx.nick);
 
-    if (irc_connect (self->irc_s, self->server, 6667, self->pass, ctx.nick, "ipoirc", "IP over IRC - http://github.com/EXio4/IPoIRC")) {
+    if (irc_connect (self->irc_s, self->server, self->port, self->pass, ctx.nick, "ipoirc", "IP over IRC - http://github.com/EXio4/IPoIRC")) {
         irc_debug(self, "error when connecting to irc (%s)", irc_strerror(irc_errno(self->irc_s)));
         goto exit;
     }
