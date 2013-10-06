@@ -98,13 +98,21 @@ void event_message(irc_session_t *session, const char *event, const char *origin
         HASH_FIND_STR((ctx->ds), nick, buf);
 
         if (!buf) {
+            irc_debug(self, "allocating a new buffer structure for %s", nick);
             buf = malloc(sizeof(dbuf));
             buf->dt = malloc(sizeof(char)*MTU*4);
+            memset(buf->dt, 0, MTU*4);
             strncpy(buf->nick, nick, 127);
             HASH_ADD_STR((ctx->ds), nick, buf);
         }
 
-        snprintf(buf->dt, MTU*4-1, "%s%s", buf->dt, data);
+        // ugly workaround to a bug that comes from nonwhere, try to know why it doesn't work somewhen
+        {
+            char buffer[MTU*4] = {0};
+            snprintf(buffer, MTU*4-1, "%s%s", buf->dt, data);
+            snprintf(buf->dt, MTU*4-1, "%s", buffer);
+        }
+
 
         if (rc != DONE) goto clean; // data already added, but there is still more data to come
 

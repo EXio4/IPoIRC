@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
                 debug("main IRC thread (%d) failed to create, fatal!", i);
                 exit(1);
             } else {
-                debug("WARNING: IRC thread % failed to create", i);
+                debug("WARNING: IRC thread %d failed to create", i);
             }
         }
     }
