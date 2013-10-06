@@ -125,39 +125,26 @@ int main(int argc, char **argv) {
 
     if (config) {
         cfg_opt_t opts[] = {
-            CFG_STR("netid",    0,              CFGF_NODEFAULT),
-            CFG_STR("nick",     "ipoirc%d",     CFGF_NONE),
-            CFG_STR("network",  0,              CFGF_NODEFAULT),
-            CFG_STR("password", 0,              CFGF_NODEFAULT),
-            CFG_STR("channel",  0,              CFGF_NODEFAULT),
-            CFG_STR("localip",  "192.168.64.1", CFGF_NONE),
-            CFG_STR("remoteip", "192.168.64.2", CFGF_NONE),
-            CFG_INT("port",     6667,           CFGF_NONE),
-            CFG_INT("uid",      0,              CFGF_NONE),
-            CFG_INT("gid",      0,              CFGF_NONE),
-            CFG_INT("threads",  1,              CFGF_NONE),
+            CFG_SIMPLE_STR("netid",    &netid),
+            CFG_SIMPLE_STR("nick",     &nick),
+            CFG_SIMPLE_STR("network",  &net),
+            CFG_SIMPLE_STR("password", &pass),
+            CFG_SIMPLE_STR("channel",  &chan),
+            CFG_SIMPLE_STR("localip",  &h1),
+            CFG_SIMPLE_STR("remoteip", &h2),
+            CFG_SIMPLE_INT("port",     &port),
+            CFG_SIMPLE_INT("uid",      &uid),
+            CFG_SIMPLE_INT("gid",      &gid),
+            CFG_SIMPLE_INT("threads",  &threads),
             CFG_END()
         };
 
-        cfg_t *cfg;
+        cfg_t *cfg = cfg_init(opts, CFGF_NONE);
 
-        cfg = cfg_init(opts, CFGF_NONE);
-
-        if (cfg_parse(cfg, config) == CFG_SUCCESS) {
-            netid   = cfg_getstr(cfg, "netid");
-            nick    = cfg_getstr(cfg, "nick");
-            net     = cfg_getstr(cfg, "network");
-            pass    = cfg_getstr(cfg, "password");
-            chan    = cfg_getstr(cfg, "channel");
-            h1      = cfg_getstr(cfg, "localip");
-            h2      = cfg_getstr(cfg, "remoteip");
-            port    = cfg_getint(cfg, "port");
-            uid     = cfg_getint(cfg, "uid");
-            gid     = cfg_getint(cfg, "gid");
-            threads = cfg_getint(cfg, "threads");
-        } else {
+        if (cfg_parse(cfg, config) != CFG_SUCCESS) {
             debug("error parsing config");
         }
+
         cfg_free(cfg);
     };
 

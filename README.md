@@ -42,5 +42,6 @@ IPoIRC is actually using a fixed Makefile, you need the following deps (using de
 * libpcre3-dev
 * libzmq3-dev
 * uthash-dev
+* libconfuse-dev
 
 Note that IPoIRC uses ZeroMQ 3 that is only available, at the time of writing the README, in Debian Sid and Ubuntu >13.10.
