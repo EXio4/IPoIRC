@@ -5,6 +5,7 @@
 #include <time.h>
 #include <string.h>
 #include <pthread.h>
+#include <confuse.h>
 #include <zmq.h>
 
 #include "irc.h"
@@ -32,28 +33,30 @@ void debug(char * format, ...) {
 
 void usage(char *h) {
     printf( "%s parameters:\n"
-            "\t-m S\n"
+            "\t-m S [netid]\n"
             "\t\t it is the ID that identifies the computer in the IRC<>IRC protocol\n"
-            "\t-n S\n"
+            "\t-n S [nick]\n"
             "\t\t nick used for the IRC bots, allows the usage of %%d to setup a random number in the nick\n"
-            "\t-i S\n"
+            "\t-i S [network]\n"
             "\t\t the IRC network where the bot(s) will connect\n"
-            "\t-x I\n"
+            "\t-x I [port]\n"
             "\t\t (*) port of the IRC server\n"
-            "\t-p S\n"
+            "\t-p S [password]\n"
             "\t\t (*) password for connecting to the IRC server\n"
-            "\t-c S\n"
+            "\t-c S [channel]\n"
             "\t\t channel where the bots will reside\n"
-            "\t-l X\n"
+            "\t-l X [localip]\n"
             "\t\t local IP, used in the tun interface\n"
-            "\t-r X\n"
+            "\t-r X [remoteip\\n"
             "\t\t remote IP, used in the tun interface\n"
-            "\t-U I\n"
-            "\t-G I\n"
+            "\t-U I [uid]\n"
+            "\t-G I [gid]\n"
             "\t\t (*) User and Group ID, used to drop privs\n"
-            "\t-t I\n"
+            "\t-t I [threads]\n"
             "\t\t IRC threads used (equal to the number of IRC bots connected to the IRC network)\n"
-            "\n(*) means the parameter is optional\n",
+            "\t-f S\n"
+            "\t\t (*) configuration file to read"
+            "\n(*) means the parameter is optional (unless it is in the config file)\n",
             h);
     exit(1);
 }
@@ -72,50 +75,93 @@ int main(int argc, char **argv) {
 
 
 
-    char *netid  = NULL;
-    char *nick   = NULL;
-    char *net    = NULL;
-    char *pass   = NULL;
-    int  port    = 6667;
-    char *chan   = NULL;
-    char *h1     = NULL;
-    char *h2     = NULL;
-    int  threads = 1;
-    int  gid     = 0;
-    int  uid     = 0;
+    char *netid         = NULL;
+    char *nick          = NULL;
+    char *net           = NULL;
+    char *pass          = NULL;
+    long int  port      = 6667;
+    char *chan          = NULL;
+    char *h1            = NULL;
+    char *h2            = NULL;
+    char *config        = NULL;
+    long int  threads   = 1;
+    long int  gid       = 0;
+    long int  uid       = 0;
 
-    int i        = 0;
-    int c        = 0;
+    int i               = 0;
+    int c               = 0;
 
-    while ((c = getopt (argc, argv, "hm:n:i:x:p:c:l:r:U:G:t:")) != -1) {
+    while ((c = getopt (argc, argv, "hm:n:i:x:p:c:l:r:U:G:t:f:")) != -1) {
         switch (c) {
-            case 'm': netid = optarg;
+            case 'm': netid     = optarg;
                 break;
-            case 'n': nick = optarg;
+            case 'n': nick      = optarg;
                 break;
-            case 'i': net = optarg;
+            case 'i': net       = optarg;
                 break;
-            case 'x': port = atoi(optarg);
+            case 'x': port      = atoi(optarg);
                 break;
-            case 'p': pass = optarg;
+            case 'p': pass      = optarg;
                 break;
-            case 'c': chan = optarg;
+            case 'c': chan      = optarg;
                 break;
-            case 'l': h1 = optarg;
+            case 'l': h1        = optarg;
                 break;
-            case 'r': h2 = optarg;
+            case 'r': h2        = optarg;
                 break;
-            case 'U': uid = atoi(optarg);
+            case 'U': uid       = atoi(optarg);
                 break;
-            case 'G': gid = atoi(optarg);
+            case 'G': gid       = atoi(optarg);
                 break;
-            case 't': threads = atoi(optarg);
+            case 't': threads   = atoi(optarg);
+                break;
+            case 'f': config    = optarg;
                 break;
             case 'h':
             default:
                 usage(argv[0]);
         }
     }
+
+    if (config) {
+        cfg_opt_t opts[] = {
+            CFG_STR("netid",    0,              CFGF_NODEFAULT),
+            CFG_STR("nick",     "ipoirc%d",     CFGF_NONE),
+            CFG_STR("network",  0,              CFGF_NODEFAULT),
+            CFG_STR("password", 0,              CFGF_NODEFAULT),
+            CFG_STR("channel",  0,              CFGF_NODEFAULT),
+            CFG_STR("localip",  "192.168.64.1", CFGF_NONE),
+            CFG_STR("remoteip", "192.168.64.2", CFGF_NONE),
+            CFG_INT("port",     6667,           CFGF_NONE),
+            CFG_INT("uid",      0,              CFGF_NONE),
+            CFG_INT("gid",      0,              CFGF_NONE),
+            CFG_INT("threads",  1,              CFGF_NONE),
+            CFG_END()
+        };
+
+        cfg_t *cfg;
+
+        cfg = cfg_init(opts, CFGF_NONE);
+
+        if (cfg_parse(cfg, config) == CFG_SUCCESS) {
+            netid   = cfg_getstr(cfg, "netid");
+            nick    = cfg_getstr(cfg, "nick");
+            net     = cfg_getstr(cfg, "network");
+            pass    = cfg_getstr(cfg, "password");
+            chan    = cfg_getstr(cfg, "channel");
+            h1      = cfg_getstr(cfg, "localip");
+            h2      = cfg_getstr(cfg, "remoteip");
+            port    = cfg_getint(cfg, "port");
+            uid     = cfg_getint(cfg, "uid");
+            gid     = cfg_getint(cfg, "gid");
+            threads = cfg_getint(cfg, "threads");
+        } else {
+            debug("error parsing config");
+        }
+        cfg_free(cfg);
+    };
+
+
     if (threads > MAX_IRC_THREADS) {
         debug("WARNING: you can't define more than %d IRC threads, starting in single-thread mode\n", MAX_IRC_THREADS);
         threads = 1;
@@ -123,18 +169,15 @@ int main(int argc, char **argv) {
     if (threads < 1)
         threads = 1;
 
-    if (netid == NULL ||
-        nick  == NULL ||
-        net   == NULL ||
-        chan  == NULL ||
-        h1    == NULL ||
-        h2    == NULL)
-      usage(argv[0]);
+    if (netid == NULL || nick  == NULL ||
+        net   == NULL || chan  == NULL ||
+        h1    == NULL || h2    == NULL)
+            usage(argv[0]);
 
     // define shared data (context and thread id)
     for (i=0; i<threads; i++) {
         irc_data[i].d.id       = i;
-        irc_data[i].d.context = context;
+        irc_data[i].d.context  = context;
     }
 
     tun_data.d.id      = -1;

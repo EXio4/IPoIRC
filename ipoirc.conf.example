@@ -1,0 +1,23 @@
+# Network related settings
+
+network = "irc.freenode.net"
+port    = 6667
+nick    = "ipoirc%d"
+channel = "##ipoirc-test"
+
+# IRC<->IRC communication
+
+netid = "desktop1234"
+
+# TUN setup
+
+localip  = "192.168.64.1"
+remoteip = "192.168.64.2"
+
+# Dropping privs
+
+gid = 1000
+uid = 1000
+
+# IRC threads
+threads = 2
