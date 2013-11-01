@@ -58,9 +58,13 @@ void* irc_thread_zmq(void *data) {
             continue;
         } else if (nbytes > MTU) {
             // something is wrong, very wrong
-            irc_debug(self, "warning: some message got truncated by %d (%d - %d), this means the MTU is too low for you!", nbytes - MTU, nbytes, MTU);
-            irc_debug(self, "this shouldn't happen");
-            nbytes = MTU;
+            irc_debug(self, "dropping packet, too big, %sbytes, actual MTU", nbytes, MTU);
+            continue;
+        }
+
+        if (counter > 15) {
+            irc_debug(self, "dropping packet, the thread is heavy-loaded");
+            continue;
         }
 
         base64(sbuffer, nbytes, &b64);
@@ -100,8 +104,7 @@ void* irc_thread_zmq(void *data) {
 
             if (counter > 10) {
                 // heavy loaded thread, let it sleep a bit
-                ms_delay(2500);
-                // counter = 0 in the next loop
+                ms_delay(1250);
             }
 
             clock_gettime(CLOCK_MONOTONIC, &zm1);
