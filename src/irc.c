@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdint.h>
+#include <time.h>
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
@@ -15,17 +17,23 @@
 #include "base64.h"
 
 void* irc_thread_zmq(void *data) {
-    irc_thread_data *self = (irc_thread_data*)data;
-    char *sbuffer = malloc(sizeof(char)*MTU);
-    char *final_line = malloc(sizeof(char)*MTU*2); // worse thing that can happen?
-    char *b64 = NULL;
-    char **b64s = malloc(sizeof(char)*MTU);
-    int i = 0;
-    int lines = 0;
+    irc_thread_data *self   = (irc_thread_data*)data;
+    char *sbuffer           = malloc(sizeof(char)*MTU);
+    char *final_line        = malloc(sizeof(char)*MTU*2);
+    char *b64               = NULL;
+    char **b64s             = malloc(sizeof(char)*MTU);
+    int  i                  = 0;
+    int  lines              = 0;
 
-    void *socket = NULL;
+    // antiflood variables
+    long counter            = 0;
+    long time_diff          = 0;
+    struct timespec zm1     = {0};
+    struct timespec zm2     = {0};
 
-    if (!sbuffer) goto exit;
+    void *socket            = NULL;
+
+    if (!sbuffer)    goto exit;
     if (!final_line) goto exit;
 
     socket = zmq_socket(self->d.context, ZMQ_PULL); // client of the tun_socket
@@ -35,6 +43,9 @@ void* irc_thread_zmq(void *data) {
         irc_debug(self, "(irc_thread_zmq) error when connecting to IPC socket - %s", zmq_strerror(errno));
         goto exit;
     }
+
+    clock_gettime(CLOCK_MONOTONIC, &zm1);
+
 
     while (1) {
         memset(sbuffer, 0, MTU);
@@ -46,7 +57,9 @@ void* irc_thread_zmq(void *data) {
         } else if (nbytes == 0) {
             continue;
         } else if (nbytes > MTU) {
+            // something is wrong, very wrong
             irc_debug(self, "warning: some message got truncated by %d (%d - %d), this means the MTU is too low for you!", nbytes - MTU, nbytes, MTU);
+            irc_debug(self, "this shouldn't happen");
             nbytes = MTU;
         }
 
@@ -65,6 +78,33 @@ void* irc_thread_zmq(void *data) {
             irc_cmd_msg(self->irc_s, self->chan, final_line);
 
             free(format);
+
+            // anti-flood
+            clock_gettime(CLOCK_MONOTONIC, &zm2);
+            time_diff = tms_diff(&zm1, &zm2);
+
+            if        (time_diff > 2500) {
+                        counter = 0;
+            } else if (time_diff > 2000) {
+                        counter = counter / 2;
+            } else if (time_diff > 1500) {
+                        counter--;
+            } else {
+                        counter++;
+            }
+            if (counter < 0) counter = 0; // for safety reasons.
+
+            if (counter > 3 && time_diff < 250) {
+                ms_delay(150);
+            }
+
+            if (counter > 10) {
+                // heavy loaded thread, let it sleep a bit
+                ms_delay(2500);
+                // counter = 0 in the next loop
+            }
+
+            clock_gettime(CLOCK_MONOTONIC, &zm1);
         }
 
         free(b64);

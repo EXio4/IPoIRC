@@ -47,7 +47,7 @@ void usage(char *h) {
             "\t\t channel where the bots will reside\n"
             "\t-l X [localip]\n"
             "\t\t local IP, used in the tun interface\n"
-            "\t-r X [remoteip\\n"
+            "\t-r X [remoteip]\n"
             "\t\t remote IP, used in the tun interface\n"
             "\t-U I [uid]\n"
             "\t-G I [gid]\n"
