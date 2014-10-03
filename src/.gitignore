@@ -1,0 +1,4 @@
+*.o
+*~
+b64test
+build-gen.h
