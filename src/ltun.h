@@ -1,7 +1,7 @@
-#ifndef _LTUN_H
-#define _LTUN_H
+#ifndef IPOIRC_LTUN_H
+#define IPOIRC_LTUN_H
 
-#include <dumbnet.h>
+#include "build-dnet.h"
 
 typedef struct ltun_t {
     int fd;

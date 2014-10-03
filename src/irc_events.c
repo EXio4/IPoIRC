@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <zmq.h>
-#include <libircclient/libircclient.h>
 #include <pcre.h>
 #include "constants.h"
 #include "config.h"

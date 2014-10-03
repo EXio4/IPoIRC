@@ -1,4 +1,3 @@
-// it is dumbnet in debian, but, how could we check if it is called dumbnet or dnet? (a define, when compiling?)
 #include <stdio.h>
 #include <string.h>
 #include <bsd/string.h>

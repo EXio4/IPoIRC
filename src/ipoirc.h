@@ -1,8 +1,8 @@
-#ifndef _IPOIRC_H
-#define _IPOIRC_H
+#ifndef IPOIRC_H
+#define IPOIRC_H
 
 #include <pthread.h>
-#include <libircclient/libircclient.h>
+#include "build-libircclient.h"
 
 #define MAX_IRC_THREADS 20
 
