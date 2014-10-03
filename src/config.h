@@ -1,5 +1,5 @@
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef IPOIRC_CONFIG_H
+#define IPOIRC_CONFIG_H
 
 #define FORMAT  "@%s: %s"
 

@@ -1,4 +1,4 @@
-#ifndef _IRC_HELPERS_H
-#define _IRC_HELPERS_H
+#ifndef IPOIRC_IRC_HELPERS_H
+#define IPOIRC_IRC_HELPERS_H
 void irc_debug(irc_thread_data *self, char * format, ...);
 #endif

@@ -1,4 +1,4 @@
-#ifndef _HELPERS_H
-#define _HELPERS_H
+#ifndef IPOIRC_HELPERS_H
+#define IPOIRC_HELPERS_H
 int split(char *str, char **fstr);
 #endif

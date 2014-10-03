@@ -1,5 +1,5 @@
-#ifndef _IRC_H
-#define _IRC_H
+#ifndef IPOIRC_IRC_H
+#define IPOIRC_IRC_H
 #include "ipoirc.h"
 #include "uthash.h"
 

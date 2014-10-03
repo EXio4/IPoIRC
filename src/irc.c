@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <sys/select.h>
 #include <zmq.h>
-#include <libircclient/libircclient.h>
+#include "build-libircclient.h"
 #include <pcre.h>
 #include "config.h"
 #include "irc.h"
