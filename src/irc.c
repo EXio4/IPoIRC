@@ -17,7 +17,7 @@
 void* irc_thread_zmq(void *data) {
     irc_thread_data *self = (irc_thread_data*)data;
     char *sbuffer = malloc(sizeof(char)*MTU);
-    char *final_line = malloc(sizeof(char)*MTU*2); // worse thing that can happen?
+    char *final_line = malloc(sizeof(char)*MTU*2); // worst thing that can happen (I hope)
     char *b64 = NULL;
     char **b64s = malloc(sizeof(char)*MTU);
     int i = 0;
@@ -108,7 +108,7 @@ void* irc_thread_net(void *data) {
     snprintf(ctx.nick, 511, self->nick, rand()%2048+1);
     ctx.self    = self;
     ctx.ds      = NULL;
-    ctx.data    = socket; // WE ARE PASSING A NON-THREAD-SAFE SOCKET HERE! </redwarning>
+    ctx.data    = socket; // WE ARE PASSING A NON-THREAD-SAFE SOCKET HERE!
 
     irc_s = irc_create_session(&callbacks);
     if (!irc_s) {

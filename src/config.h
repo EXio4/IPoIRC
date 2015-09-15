@@ -11,8 +11,6 @@
 
 // internals
 
-// mtu you will use
-
 #define MTU 1472
 
 #endif

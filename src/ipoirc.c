@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
         h1    == NULL || h2    == NULL)
             usage(argv[0]);
 
-    // define shared data (context and thread id)
+    // shared data (context and thread id)
     for (i=0; i<threads; i++) {
         irc_data[i].d.id       = i;
         irc_data[i].d.context  = context;
