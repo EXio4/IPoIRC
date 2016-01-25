@@ -16,10 +16,10 @@
 
 void* irc_thread_zmq(void *data) {
     irc_thread_data *self = (irc_thread_data*)data;
-    char *sbuffer = malloc(sizeof(char)*MTU);
-    char *final_line = malloc(sizeof(char)*MTU*2); // worst thing that can happen (I hope)
+    char *sbuffer = (char*)malloc(sizeof(char)*MTU);
+    char *final_line = (char*)malloc(sizeof(char)*MTU*2); // worst thing that can happen (I hope)
     char *b64 = NULL;
-    char **b64s = malloc(sizeof(char)*MTU);
+    char **b64s = (char**)malloc(sizeof(char)*MTU);
     int i = 0;
     int lines = 0;
 
@@ -30,8 +30,7 @@ void* irc_thread_zmq(void *data) {
 
     socket = zmq_socket(self->d.context, ZMQ_PULL); // client of the tun_socket
 
-    int ret = zmq_connect(socket, "inproc://#tun_to_#irc");
-    if (ret) {
+    if (zmq_connect(socket, "inproc://#tun_to_#irc")) {
         irc_debug(self, "(irc_thread_zmq) error when connecting to IPC socket - %s", zmq_strerror(errno));
         goto exit;
     }
@@ -54,7 +53,7 @@ void* irc_thread_zmq(void *data) {
         // split newlines
         lines = split(b64, b64s);
         for (i=0; i<lines; i++) {
-            char *format = malloc(sizeof(char)*16);
+            char *format = (char*)malloc(sizeof(char)*16);
             if (i == (lines-1)) {
                 snprintf(format, 15, "%s", FORMAT_FINAL);
             } else {
@@ -89,9 +88,8 @@ void* irc_thread_net(void *data) {
     irc_session_t *irc_s;
 
     void *socket = zmq_socket(self->d.context, ZMQ_PUSH); // "server" from irc -> tun
-    int ret = zmq_connect(socket, "inproc://#irc_to_#tun");
 
-    if (ret) {
+    if (zmq_connect(socket, "inproc://#irc_to_#tun")) {
         irc_debug(self, "(irc_thread_net) error when creating IPC socket - %s", zmq_strerror(errno));
         goto exit;
     }
@@ -104,7 +102,7 @@ void* irc_thread_net(void *data) {
     callbacks.event_channel = event_message;
 
     ctx.channel = strdup(self->chan);
-    ctx.nick    = malloc(sizeof(char)*512);
+    ctx.nick    = (char*)malloc(sizeof(char)*512);
     snprintf(ctx.nick, 511, self->nick, rand()%2048+1);
     ctx.self    = self;
     ctx.ds      = NULL;
@@ -167,17 +165,13 @@ void* irc_thread(void* data) {
 
     }
 
-    int n_th = 0;
-    int z_th = pthread_create(&zeromq_thread, NULL, irc_thread_zmq, (void*)self);
-
-    if (z_th) {
+    if (pthread_create(&zeromq_thread, NULL, irc_thread_zmq, (void*)self)) {
         irc_debug(self, "error when creating zmq thread");
         goto exit;
     }
 
     while (1) {
-        pthread_create(&network_thread, NULL, irc_thread_net, (void*)self);
-        if (n_th) {
+        if (pthread_create(&network_thread, NULL, irc_thread_net, (void*)self)) {
             irc_debug(self, "error when creating irc thread");
             goto exit;
         }

@@ -22,8 +22,8 @@
 ltun_t* ltun_alloc(char *dev, int mtu, char *local, char *remote) {
 
     int ln = strlen(dev);
-    ltun_t *sf = malloc(sizeof(ltun_t));
-    char *dv = malloc(sizeof(char)*ln+1);
+    ltun_t *sf = (ltun_t*)malloc(sizeof(ltun_t));
+    char *dv = (char*)malloc(sizeof(char)*ln+1);
 
     struct intf_entry ifent;
     struct addr a, b;

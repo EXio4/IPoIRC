@@ -59,7 +59,7 @@ void event_message(irc_session_t *session, const char *event, const char *origin
     char *lin    = NULL;
     char *netid  = NULL;
     char *data   = NULL;
-    char *nick   = malloc(sizeof(char)*256);
+    char *nick   = (char*)malloc(sizeof(char)*256);
 
     char *st     = NULL;
 
@@ -71,8 +71,8 @@ void event_message(irc_session_t *session, const char *event, const char *origin
 
     if (params[1]) {
         lin   = strdup(params[1]);
-        netid = malloc(sizeof(char)*512);
-        data  = malloc(sizeof(char)*512);
+        netid = (char*)malloc(sizeof(char)*512);
+        data  = (char*)malloc(sizeof(char)*512);
 
         //if (!netid || !data || !lin) goto clean;
 
@@ -82,14 +82,14 @@ void event_message(irc_session_t *session, const char *event, const char *origin
 
         // note: we assume the regex matches *always* the id and the data, for making the code smaller and simpler
 
-        rc = pcre_exec(self->regex_final, NULL, lin, (int)strlen(lin), 0, 0, vc, 9);
+        rc = pcre_exec((const pcre *)self->regex_final, NULL, lin, (int)strlen(lin), 0, 0, vc, 9);
         if (rc >= 0 && !parse)
                 goto clean; // failed parsing
 
         if (rc >= 0) rc = DONE;
 
         if (rc < 0) {
-            rc = pcre_exec(self->regex, NULL, lin, (int)strlen(lin), 0, 0, vc, 9);
+            rc = pcre_exec((const pcre *)self->regex, NULL, lin, (int)strlen(lin), 0, 0, vc, 9);
             if (rc < 0 || !parse)
                 goto clean; // no match with the final nor the "normal"
         }
@@ -98,8 +98,8 @@ void event_message(irc_session_t *session, const char *event, const char *origin
 
         if (!buf) {
             irc_debug(self, "allocating a new buffer structure for %s", nick);
-            buf = malloc(sizeof(dbuf));
-            buf->dt = malloc(sizeof(char)*MTU*4);
+            buf = (dbuf*)malloc(sizeof(dbuf));
+            buf->dt = (char*)malloc(sizeof(char)*MTU*4);
             memset(buf->dt, 0, MTU*4);
             strncpy(buf->nick, nick, 127);
             HASH_ADD_STR((ctx->ds), nick, buf);
@@ -114,17 +114,18 @@ void event_message(irc_session_t *session, const char *event, const char *origin
 
 
         if (rc != DONE) goto clean; // data already added, but there is still more data to come
+        {
+            int z, len = 0;
+            len = debase64(buf->dt, &st);
+            if (len < 1) {
+                irc_debug(self, "error when decoding base64 buffer (%d)", len);
+                goto iclean;
+            }
 
-        int z, len = 0;
-        len = debase64(buf->dt, &st);
-        if (len < 1) {
-            irc_debug(self, "error when decoding base64 buffer (%d)", len);
-            goto iclean;
-        }
-
-        if ((z = zmq_send(ctx->data, st, len, 0)) < 0) {
-                irc_debug(self, "error when trying to send a message to the tun (warning, this WILL result in missing packets!)", zmq_strerror(errno));
-        }
+            if ((z = zmq_send(ctx->data, st, len, 0)) < 0) {
+                    irc_debug(self, "error when trying to send a message to the tun (warning, this WILL result in missing packets!)", zmq_strerror(errno));
+            }
+        };
         iclean:
         memset(buf->dt, 0, strlen(buf->dt));
 

@@ -40,7 +40,7 @@ $(TARGET): $(OBJS)
 tests:
 	$(CXX) -o b64test -DTESTS -Wall base64.c -lm -lcrypto
 
-%.o: %.cpp
+%.o: %.cxx
 	echo $(CXX)
 	$(CXX) $(CXXFLAGS)  $(DEFINES) -o $@ -c $<
 

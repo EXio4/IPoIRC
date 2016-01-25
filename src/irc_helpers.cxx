@@ -4,7 +4,7 @@
 #include "ipoirc.h"
 #include "irc_helpers.h"
 
-void irc_debug(irc_thread_data *self, char * format, ...) {
+void irc_debug(irc_thread_data *self, const char * format, ...) {
     time_t curtime = time (NULL);
     struct tm *loctime = localtime(&curtime);
     char timestamp[128] = {0};
