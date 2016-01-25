@@ -1,5 +1,5 @@
 PREFIX = /usr/local
-CFLAGS ?= -Wall -Wextra -O0 -g `dnet-config --cflags`
+CXXFLAGS ?= -Wall -Wextra -O0 -g `dnet-config --cflags`
 LIBS = -lpthread `dnet-config --libs` -lzmq -lircclient -lcrypto -lm -lbsd -lpcre -lconfuse
 OBJS = ipoirc.o irc.o irc_events.o irc_helpers.o ltun.o tun.o tun_helpers.o helpers.o base64.o
 TARGET = ipoirc
@@ -14,7 +14,7 @@ TARGET = ipoirc
 	@echo '#define _IPOIRC_BUILD_GEN_H' >> build-gen.h
 	@echo >> build-gen.h
 
-	@if ! hash dnet 2>/dev/null && hash dumbnet 2>/dev/null; then \
+	@if ! hash dnet 2>/dev/null && hash dumbnet-config 2>/dev/null; then \
 		echo '#define IPOIRC_BUILD_DUMBNET' >> build-gen.h; \
 	else \
 		echo '#define IPOIRC_BUILD_DNET' >> build-gen.h; \
@@ -35,13 +35,14 @@ TARGET = ipoirc
 all: .build-gen $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 tests:
-	$(CC) -o b64test -DTESTS -Wall base64.c -lm -lcrypto
+	$(CXX) -o b64test -DTESTS -Wall base64.c -lm -lcrypto
 
-%.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -o $@ -c $<
+%.o: %.cpp
+	echo $(CXX)
+	$(CXX) $(CXXFLAGS)  $(DEFINES) -o $@ -c $<
 
 install: $(TARGET)
 	mkdir -p $(PREFIX)/bin
