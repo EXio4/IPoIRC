@@ -1,31 +1,25 @@
 #ifndef IPOIRC_H
 #define IPOIRC_H
 
-#include <pthread.h>
 #include "build-libircclient.h"
 
 #define MAX_IRC_THREADS 20
 
-typedef struct shared_thread_data {
-    int id;
-    void *context;
-} shared_thread_data; // internal
+typedef struct irc_closure {
 
-typedef struct irc_thread_data {
-    shared_thread_data  d;
+    int                  xid;
+    void                *context;
+
     char                *netid;
     void                *regex;
     void                *regex_final;
-    char                *nick, *pass;
-    char                *server, *chan;
-    int                 port;
+    char                *nick  ,
+                        *pass;
+    char                *server,
+                        *chan;
+    int                  port;
     irc_session_t       *irc_s;
-} irc_thread_data;
+} irc_closure;
 
-typedef struct tun_thread_data {
-    shared_thread_data  d;
-    void                *tun;
-    pthread_mutex_t     mutex;
-} tun_thread_data;
 
 #endif

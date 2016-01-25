@@ -19,7 +19,7 @@
                                         }\
                                     } while(0);
 
-ltun_t* ltun_alloc(char *dev, int mtu, char *local, char *remote) {
+ltun_t* ltun_alloc(const char *dev, int mtu, const char *local, const char *remote) {
 
     int ln = strlen(dev);
     ltun_t *sf = (ltun_t*)malloc(sizeof(ltun_t));
@@ -30,7 +30,7 @@ ltun_t* ltun_alloc(char *dev, int mtu, char *local, char *remote) {
 
     struct ifreq ifr;
     int fd = -1, err;
-    char *clonedev = "/dev/net/tun";
+    const char *clonedev = "/dev/net/tun";
 
     if (!sf) goto exit;
     // check for dv
@@ -91,7 +91,7 @@ int ltun_read(ltun_t *self, char *buf, int len) {
     return read(self->fd, buf, len);
 }
 
-int ltun_write(ltun_t *self, char *buf, int len) {
+int ltun_write(ltun_t *self, const char *buf, int len) {
     __TUN_INTEGRITY_CHECK(self, return -1)
 
     return write(self->fd, buf, len);

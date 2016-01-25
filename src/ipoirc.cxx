@@ -1,10 +1,12 @@
+
+#include <thread>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdarg.h>
 #include <time.h>
 #include <string.h>
-#include <pthread.h>
 #include <confuse.h>
 #include <zmq.h>
 
@@ -15,7 +17,7 @@
 #include "helpers.h"
 #include "ipoirc.h"
 
-void debug(char * format, ...) {
+void debug(const char * format, ...) {
     time_t curtime = time (NULL);
     struct tm *loctime = localtime(&curtime);
     char timestamp[128];
@@ -47,7 +49,7 @@ void usage(char *h) {
             "\t\t channel where the bots will reside\n"
             "\t-l X [localip]\n"
             "\t\t local IP, used in the tun interface\n"
-            "\t-r X [remoteip\\n"
+            "\t-r X [remoteip\n"
             "\t\t remote IP, used in the tun interface\n"
             "\t-U I [uid]\n"
             "\t-G I [gid]\n"
@@ -65,15 +67,7 @@ int main(int argc, char **argv) {
 
     srand(time(NULL));
 
-    void* context = zmq_ctx_new();
-
-    irc_thread_data irc_data[MAX_IRC_THREADS];
-    tun_thread_data tun_data;
-
-    pthread_t irc_threads[MAX_IRC_THREADS];
-    pthread_t tun_threadS;
-
-
+    void* zmq_context = zmq_ctx_new();
 
     char *netid         = NULL;
     char *nick          = NULL;
@@ -161,30 +155,9 @@ int main(int argc, char **argv) {
         h1    == NULL || h2    == NULL)
             usage(argv[0]);
 
-    // shared data (context and thread id)
-    for (i=0; i<threads; i++) {
-        irc_data[i].d.id       = i;
-        irc_data[i].d.context  = context;
-    }
+    ltun_t* tun_handle  = ltun_alloc("irc%d", MTU, h1, h2);
 
-    tun_data.d.id      = -1;
-    tun_data.d.context = context;
-
-    for (i=0; i<threads; i++) {
-        irc_data[i].netid   = netid; // "socket id" (used in irc <-> irc communication)
-        irc_data[i].nick    = nick;
-        irc_data[i].pass    = pass;
-        irc_data[i].server  = net;
-        irc_data[i].port    = port;
-        irc_data[i].chan    = chan;
-        irc_data[i].irc_s   = NULL;
-    }
-
-    int rc = 0;
-
-    tun_data.tun = (void*)ltun_alloc("irc%d", MTU, h1, h2);
-
-    if (!tun_data.tun) {
+    if (!tun_handle) {
         debug("error starting the tun interface, are you root?");
         exit(1);
     }
@@ -198,29 +171,31 @@ int main(int argc, char **argv) {
 
     debug("running as %d", getuid());
 
-    rc = pthread_create(&tun_threadS, NULL, tun_thread, &tun_data);
-    if (rc) {
-        debug("error creating tun thread, fatal!");
-        exit(1);
-    }
+    std::thread tun_th([zmq_context,tun_handle]() {
+        return tun_thread(zmq_context, tun_handle);
+    });
 
     sleep(1);
 
 
     for (i=0; i<threads; i++) {
-        rc = pthread_create(&irc_threads[i], NULL, irc_thread, &irc_data[i]);
-        if (rc) {
-            if (i == 0) {
-                debug("main IRC thread (%d) failed to create, fatal!", i);
-                exit(1);
-            } else {
-                debug("WARNING: IRC thread %d failed to create", i);
-            }
-        }
+        irc_closure cl;
+        cl.xid     = i;
+        cl.context = zmq_context;
+        cl.netid   = netid; // "socket id" (used in irc <-> irc communication)
+        cl.nick    = nick;
+        cl.pass    = pass;
+        cl.server  = net;
+        cl.port    = port;
+        cl.chan    = chan;
+        cl.irc_s   = NULL;
+        std::thread th([cl]() {
+            return irc_thread(cl);
+        });
     }
 
 
-    pthread_join(tun_threadS, NULL);
+    tun_th.join();
 
     return 0;
 }

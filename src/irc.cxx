@@ -1,7 +1,8 @@
+#include <thread>
+
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <pthread.h>
 #include <sys/select.h>
 #include <zmq.h>
 #include "build-libircclient.h"
@@ -14,8 +15,7 @@
 #include "helpers.h"
 #include "base64.h"
 
-void* irc_thread_zmq(void *data) {
-    irc_thread_data *self = (irc_thread_data*)data;
+void irc_thread_zmq(irc_closure self) {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     char *final_line = (char*)malloc(sizeof(char)*MTU*2); // worst thing that can happen (I hope)
     char *b64 = NULL;
@@ -28,7 +28,7 @@ void* irc_thread_zmq(void *data) {
     if (!sbuffer) goto exit;
     if (!final_line) goto exit;
 
-    socket = zmq_socket(self->d.context, ZMQ_PULL); // client of the tun_socket
+    socket = zmq_socket(self.context, ZMQ_PULL); // client of the tun_socket
 
     if (zmq_connect(socket, "inproc://#tun_to_#irc")) {
         irc_debug(self, "(irc_thread_zmq) error when connecting to IPC socket - %s", zmq_strerror(errno));
@@ -39,7 +39,7 @@ void* irc_thread_zmq(void *data) {
         memset(sbuffer, 0, MTU);
         int nbytes = zmq_recv(socket, sbuffer, MTU, 0);
 
-        if (nbytes < 0 ) {
+        if (nbytes < 0) {
             irc_debug(self, "error when reading from zeromq socket");
             goto exit; // a cute break here!
         } else if (nbytes == 0) {
@@ -60,8 +60,8 @@ void* irc_thread_zmq(void *data) {
                 snprintf(format, 15, "%s", FORMAT);
             }
 
-            snprintf(final_line, (MTU*2)-1, format, self->netid, b64s[i]);
-            irc_cmd_msg(self->irc_s, self->chan, final_line);
+            snprintf(final_line, (MTU*2)-1, format, self.netid, b64s[i]);
+            irc_cmd_msg(self.irc_s, self.chan, final_line);
 
             free(format);
         }
@@ -78,16 +78,13 @@ void* irc_thread_zmq(void *data) {
     if (socket)
         zmq_close(socket);
 
-    pthread_exit(NULL);
 }
 
-void* irc_thread_net(void *data) {
-    irc_thread_data *self = (irc_thread_data*)data;
+void irc_thread_net(irc_closure self) {
     irc_callbacks_t callbacks;
     irc_ctx_t ctx;
-    irc_session_t *irc_s;
 
-    void *socket = zmq_socket(self->d.context, ZMQ_PUSH); // "server" from irc -> tun
+    void *socket = zmq_socket(self.context, ZMQ_PUSH); // "server" from irc -> tun
 
     if (zmq_connect(socket, "inproc://#irc_to_#tun")) {
         irc_debug(self, "(irc_thread_net) error when creating IPC socket - %s", zmq_strerror(errno));
@@ -101,86 +98,75 @@ void* irc_thread_net(void *data) {
     callbacks.event_privmsg = event_message;
     callbacks.event_channel = event_message;
 
-    ctx.channel = strdup(self->chan);
+    ctx.channel = strdup(self.chan);
     ctx.nick    = (char*)malloc(sizeof(char)*512);
-    snprintf(ctx.nick, 511, self->nick, rand()%2048+1);
+    snprintf(ctx.nick, 511, self.nick, rand()%2048+1);
     ctx.self    = self;
     ctx.ds      = NULL;
-    ctx.data    = socket; // WE ARE PASSING A NON-THREAD-SAFE SOCKET HERE!
+    ctx.data    = socket; // WE ARE PASSING A THREAD-UNSAFE SOCKET HERE!
 
-    irc_s = irc_create_session(&callbacks);
-    if (!irc_s) {
+    self.irc_s = irc_create_session(&callbacks);
+    if (!self.irc_s) {
         irc_debug(self, "error when creating irc_session");
         goto exit;
     }
-    self->irc_s = irc_s;
 
-    irc_set_ctx(self->irc_s, &ctx);
+    irc_set_ctx(self.irc_s, &ctx);
 
-    irc_debug(self, "created irc_session, connecting to %s:6667 as %s!", self->server, ctx.nick);
+    irc_debug(self, "created irc_session, connecting to %s:6667 as %s!", self.server, ctx.nick);
 
-    if (irc_connect (self->irc_s, self->server, self->port, self->pass, ctx.nick, "ipoirc", "IP over IRC - http://github.com/EXio4/IPoIRC")) {
-        irc_debug(self, "error when connecting to irc (%s)", irc_strerror(irc_errno(self->irc_s)));
+    if (irc_connect (self.irc_s, self.server, self.port, self.pass, ctx.nick, "ipoirc", "IP over IRC - http://github.com/EXio4/IPoIRC")) {
+        irc_debug(self, "error when connecting to irc (%s)", irc_strerror(irc_errno(self.irc_s)));
         goto exit;
     }
 
     sleep(1); // wait for the network to answer THIS SHOULD BE DONE IN A RIGHT WAY!
 
-    (void) irc_run(self->irc_s);
+    (void) irc_run(self.irc_s);
 
     exit:
-    if (self->irc_s) {
-        irc_destroy_session(self->irc_s);
+    if (self.irc_s) {
+        irc_destroy_session(self.irc_s);
     }
     if (socket) {
         zmq_close(socket);
     }
-    pthread_exit(NULL);
 }
 
-void* irc_thread(void* data) {
-    irc_thread_data *self = (irc_thread_data*)data;
-
-    pthread_t network_thread;
-    pthread_t zeromq_thread;
+void irc_thread(irc_closure self) {
 
     {
-
         // should be compiled in main thread, not here
         const char *error;
         int erroroffset;
 
-        self->regex = (void*)pcre_compile(REGEX, 0, &error, &erroroffset, NULL);
+        self.regex = (void*)pcre_compile(REGEX, 0, &error, &erroroffset, NULL);
 
-        if (!self->regex) {
+        if (!self.regex) {
             irc_debug(self, "(irc_thread) error compiling regex (%s)", REGEX);
-            goto exit;
+            return;
         }
 
-        self->regex_final = (void*)pcre_compile(REGEX_FINAL, 0, &error, &erroroffset, NULL);
-        if (!self->regex_final) {
+        self.regex_final = (void*)pcre_compile(REGEX_FINAL, 0, &error, &erroroffset, NULL);
+        if (!self.regex_final) {
             irc_debug(self, "(irc_thread) error compiling regex (%s)", REGEX);
-            goto exit;
+            return;
         }
 
     }
 
-    if (pthread_create(&zeromq_thread, NULL, irc_thread_zmq, (void*)self)) {
-        irc_debug(self, "error when creating zmq thread");
-        goto exit;
-    }
+    std::thread zm([self]() {
+        return irc_thread_zmq(self);
+    });
 
     while (1) {
-        if (pthread_create(&network_thread, NULL, irc_thread_net, (void*)self)) {
-            irc_debug(self, "error when creating irc thread");
-            goto exit;
-        }
-        pthread_join(network_thread, NULL);
-        irc_debug(self, "irc thread finished, reconnecting in 2s..");
+        std::thread th([self]() {
+            return irc_thread_net(self);
+        });
+        th.join();
+        irc_debug(self, "irc thread died, reconnecting in 2s..");
         sleep(2);
     }
 
-    exit:
 
-    pthread_exit(NULL);
 }

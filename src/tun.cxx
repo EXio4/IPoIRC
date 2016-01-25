@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <pthread.h>
+#include <thread>
 #include <zmq.h>
 
 #include "ipoirc.h"
@@ -12,89 +12,76 @@
 #include "tun.h"
 #include "tun_helpers.h"
 
-void* tun_thread_zmq(void *data) {
-    tun_thread_data *self = (tun_thread_data*)data;
+void tun_thread_zmq(void* zmq_context, ltun_t* tun) {
 
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     void *socket = NULL;
 
     if (!sbuffer) goto exit;
-    socket = zmq_socket(self->d.context, ZMQ_PULL); // client of the tun_socket
+    socket = zmq_socket(zmq_context, ZMQ_PULL); // client of the tun_socket
     if (zmq_bind(socket, "inproc://#irc_to_#tun")) {
-        tun_debug(self, "(tun_thread_zmq) error when connecting to IPC socket - %s", zmq_strerror(errno));
+        tun_debug("(tun_thread_zmq) error when connecting to IPC socket - %s", zmq_strerror(errno));
         goto exit;
     }
     while (1) {
-        tun_debug(self, ">> zmq_recv <<");
+        tun_debug(">> zmq_recv <<");
         memset(sbuffer, 0, MTU);
         int nbytes = zmq_recv(socket, sbuffer, MTU, 0);
-        tun_debug(self, "got %d bytes", nbytes);
+        tun_debug("got %d bytes", nbytes);
         if (nbytes < 0 ) {
-            tun_debug(self, "error when reading from zeromq socket");
+            tun_debug("error when reading from zeromq socket");
             goto exit; // a cute break here!
         } else if (nbytes == 0) {
             continue;
         } else if (nbytes > MTU) {
-            tun_debug(self, "warning: some message got truncated by %d (%d - %d), this means the MTU is too low for you!", nbytes - MTU, nbytes, MTU);
+            tun_debug("warning: some message got truncated by %d (%d - %d), this means the MTU is too low for you!", nbytes - MTU, nbytes, MTU);
         }
-        ltun_write((ltun_t*)self->tun, sbuffer, nbytes);
+        ltun_write(tun, sbuffer, nbytes);
     }
     exit:
     if (socket)
         zmq_close(socket);
-    pthread_exit(NULL);
 }
 
-void* tun_thread_dt(void *data) {
-    tun_thread_data *self = (tun_thread_data*)data;
-    void *socket = zmq_socket(self->d.context, ZMQ_PUSH);
+void tun_thread_dt(void* zmq_context, ltun_t* tun) {
+
+    void *socket = zmq_socket(zmq_context, ZMQ_PUSH);
 
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     if (!sbuffer) goto exit;
 
     if (zmq_bind(socket, "inproc://#tun_to_#irc")) {
-        tun_debug(self, "error when creating IPC socket - %s", zmq_strerror(errno));
+        tun_debug( "error when creating IPC socket - %s", zmq_strerror(errno));
         goto exit;
     }
 
     // tell_to_other_threads_the_tun2irc_socket_is_binded
-    tun_debug(self, "[data] created tun (data) thread!");
+    tun_debug("[data] created tun (data) thread!");
     while (1) {
-        int nbytes = ltun_read((ltun_t*)self->tun, sbuffer, MTU);
+        int nbytes = ltun_read(tun, sbuffer, MTU);
         if (nbytes > 0) {
-            tun_debug(self, "got %d from tun", nbytes);
+            tun_debug("got %d from tun", nbytes);
         }
         if (zmq_send(socket, sbuffer, nbytes, 0) < 0) {
-            tun_debug(self, "error when trying to send a message to the irc thread (warning, we continue here!)", zmq_strerror(errno));
+            tun_debug("error when trying to send a message to the irc thread (warning, we continue here!)", zmq_strerror(errno));
         }
     }
 
     exit:
     if (socket)
         zmq_close(socket);
-    pthread_exit(NULL);
 }
 
 
-void* tun_thread(void* data) {
-    tun_thread_data *self = (tun_thread_data*)data;
+void tun_thread(void* zmq_context, ltun_t* tun) {
 
-    pthread_t data_thread = {0};
-    pthread_t zeromq_thread = {0};
+    std::thread dt_th([zmq_context,tun]() {
+        return tun_thread_dt(zmq_context, tun);
+    });
+    std::thread zmq_th([zmq_context,tun]() {
+        return tun_thread_zmq(zmq_context, tun);
+    });
 
-
-    if (pthread_create(&data_thread, NULL, tun_thread_dt, (void*)self)) {
-        tun_debug(self, "error when creating tun thread (tun interface)");
-        goto exit;
-    }
-
-    if (pthread_create(&zeromq_thread, NULL, tun_thread_zmq, (void*)self)) {
-        tun_debug(self, "error when creating tun thread (zmq interface)");
-        goto exit;
-    }
-
-    pthread_join(data_thread, NULL);
-
-    exit:
-    pthread_exit(NULL);
+    dt_th.join();
+    zmq_th.join();
 }

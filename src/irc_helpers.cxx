@@ -4,7 +4,7 @@
 #include "ipoirc.h"
 #include "irc_helpers.h"
 
-void irc_debug(irc_thread_data *self, const char * format, ...) {
+void irc_debug(const irc_closure& self, const char * format, ...) {
     time_t curtime = time (NULL);
     struct tm *loctime = localtime(&curtime);
     char timestamp[128] = {0};
@@ -14,6 +14,6 @@ void irc_debug(irc_thread_data *self, const char * format, ...) {
     va_list args;
     va_start(args, format);
     vsnprintf(buffer, sizeof(buffer)-1, format, args);
-    printf("%s | [irc#%d] %s\n", timestamp, self->d.id, buffer);
+    printf("%s | [irc#%d] %s\n", timestamp, self.xid, buffer);
     va_end(args);
 }

@@ -1,4 +1,7 @@
 #ifndef IPOIRC_TUN_H
 #define IPOIRC_TUN_H
-void* tun_thread(void* data);
+
+#include "ltun.h"
+
+void tun_thread(void* zmq_context, ltun_t* tun);
 #endif

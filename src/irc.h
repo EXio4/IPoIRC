@@ -12,11 +12,11 @@ typedef struct dbuf {
 typedef struct irc_ctx_t {
     char                *channel;
     char                *nick;
-    irc_thread_data     *self;
+    irc_closure          self;
     dbuf                *ds;
     void                *data;
 } irc_ctx_t;
 
 
-void* irc_thread(void* data);
+void irc_thread(irc_closure self);
 #endif
