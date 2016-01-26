@@ -1,6 +1,9 @@
-#include <stdio.h>
+#include <iostream>
+#include <stdexcept>
+
 #include <string.h>
 #include <bsd/string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <net/if.h>
@@ -13,57 +16,39 @@
 #include <arpa/inet.h>
 #include "ltun.h"
 
-#define __TUN_INTEGRITY_CHECK(tun, leave)  do {\
-                                        if (!tun) {\
-                                            leave;\
-                                        }\
-                                    } while(0);
+Tun::Tun(std::string dev, uint16_t mtu, std::string local, std::string remote) {
+    int fd = -1;
+    intf = intf_open();
+    if (!intf)
+            throw TunError("Error allocating intf");
+    if ((fd = open("/dev/net/tun" , O_RDWR)) < 0)
+            throw TunError("Error opening /dev/net/tun");
 
-ltun_t* ltun_alloc(const char *dev, int mtu, const char *local, const char *remote) {
-
-    int ln = strlen(dev);
-    ltun_t *sf = (ltun_t*)malloc(sizeof(ltun_t));
-    char *dv = (char*)malloc(sizeof(char)*ln+1);
-
-    struct intf_entry ifent;
-    struct addr a, b;
 
     struct ifreq ifr;
-    int fd = -1, err;
-    const char *clonedev = "/dev/net/tun";
-
-    if (!sf) goto exit;
-    // check for dv
-
-    sf->intf = intf_open();
-
-    if( ((sf->intf == NULL) || (fd = open(clonedev , O_RDWR)) < 0)) {
-        fd = -1;
-        goto exit;
-    }
 
     memset(&ifr, 0, sizeof(ifr));
 
     ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
 
-    if (*dev) {
-        strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+    if (dev != "") {
+        strncpy(ifr.ifr_name, dev.c_str(), IFNAMSIZ);
     }
 
-    if( (err = ioctl(fd, TUNSETIFF, (void *)&ifr)) < 0 ) {
+    if (ioctl(fd, TUNSETIFF, (void *)&ifr) < 0) {
         close(fd);
-        fd = -1;
-        goto exit;
+        throw TunError("ioctl error");
     }
 
-    strncpy(dv, ifr.ifr_name, ln);
-
-    sf->fd = fd;
-    sf->name = dv;
+    fd   = fd;
+    name = dev;
 
 
-    addr_pton(local, &a);
-    addr_pton(remote, &b);
+    struct addr a, b;
+    struct intf_entry ifent;
+
+    addr_pton( local.c_str(), &a);
+    addr_pton(remote.c_str(), &b);
 
     memset(&ifent, 0, sizeof(ifent));
     strlcpy(ifent.intf_name, ifr.ifr_name, sizeof(ifent.intf_name));
@@ -72,40 +57,22 @@ ltun_t* ltun_alloc(const char *dev, int mtu, const char *local, const char *remo
     ifent.intf_dst_addr = b;
     ifent.intf_mtu = mtu;
 
-    if (intf_set(sf->intf, &ifent) < 0)
-        fd = -1;
-
-    exit:
-
-    if (fd < 0) {
-        free(sf);
-        sf = NULL;
+    if (intf_set(intf, &ifent) < 0) {
+        close(fd);
+        throw TunError("intf failed");
     }
 
-    return sf;
 }
 
-int ltun_read(ltun_t *self, char *buf, int len) {
-    __TUN_INTEGRITY_CHECK(self, return -1)
-
-    return read(self->fd, buf, len);
+Tun::~Tun() {
+    close(fd);
+    intf_close(intf);
 }
 
-int ltun_write(ltun_t *self, const char *buf, int len) {
-    __TUN_INTEGRITY_CHECK(self, return -1)
 
-    return write(self->fd, buf, len);
-}
-
-int ltun_close(ltun_t *self) {
-    __TUN_INTEGRITY_CHECK(self, return -1)
-
-    close(self->fd);
-    free(self->name);
-    free(self);
-
-    self = NULL;
-
-    return 0;
-}
-
+int Tun::read(char *buf, uint16_t len) const {
+    return ::read(fd, buf, len);
+};
+int Tun::write(const char *buf, uint16_t len) const {
+    return ::write(fd, buf, len);
+};

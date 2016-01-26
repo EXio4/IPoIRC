@@ -155,48 +155,48 @@ int main(int argc, char **argv) {
         h1    == NULL || h2    == NULL)
             usage(argv[0]);
 
-    ltun_t* tun_handle  = ltun_alloc("irc%d", MTU, h1, h2);
+    try {
+        Tun tun_handle("irc%d", MTU, h1, h2);
 
-    if (!tun_handle) {
-        debug("error starting the tun interface, are you root?");
-        exit(1);
-    }
 
-    if (getuid() == 0 && gid != 0 && uid != 0) {
-        if (setgid(gid) != 0 || setuid(uid) != 0) {
-            debug("unable to drop privileges: %s", strerror(errno));
-            exit(1);
+        if (getuid() == 0 && gid != 0 && uid != 0) {
+            if (setgid(gid) != 0 || setuid(uid) != 0) {
+                debug("unable to drop privileges: %s", strerror(errno));
+                exit(1);
+            }
         }
-    }
 
-    debug("running as %d", getuid());
+        debug("running as %d", getuid());
 
-    std::thread tun_th([zmq_context,tun_handle]() {
-        return tun_thread(zmq_context, tun_handle);
-    });
-
-    sleep(1);
-
-
-    for (i=0; i<threads; i++) {
-        irc_closure cl;
-        cl.xid     = i;
-        cl.context = zmq_context;
-        cl.netid   = netid; // "socket id" (used in irc <-> irc communication)
-        cl.nick    = nick;
-        cl.pass    = pass;
-        cl.server  = net;
-        cl.port    = port;
-        cl.chan    = chan;
-        cl.irc_s   = NULL;
-        std::thread th([cl]() {
-            return irc_thread(cl);
+        std::thread tun_th([zmq_context,tun_handle]() {
+            return tun_thread(zmq_context, tun_handle);
         });
-        th.detach();
-    }
+
+        sleep(1);
 
 
-    tun_th.join();
+        for (i=0; i<threads; i++) {
+            irc_closure cl;
+            cl.xid     = i;
+            cl.context = zmq_context;
+            cl.netid   = netid; // "socket id" (used in irc <-> irc communication)
+            cl.nick    = nick;
+            cl.pass    = pass;
+            cl.server  = net;
+            cl.port    = port;
+            cl.chan    = chan;
+            cl.irc_s   = NULL;
+            std::thread th([cl]() {
+                return irc_thread(cl);
+            });
+            th.detach();
+        }
+
+
+        tun_th.join();
+    } catch(TunError const &e) {
+        debug("error setting up tun, are you root?");
+    };
 
     return 0;
 }

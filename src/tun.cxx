@@ -12,7 +12,7 @@
 #include "tun.h"
 #include "tun_helpers.h"
 
-void tun_thread_zmq(void* zmq_context, ltun_t* tun) {
+void tun_thread_zmq(void* zmq_context, const Tun& tun) {
 
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     void *socket = NULL;
@@ -36,14 +36,14 @@ void tun_thread_zmq(void* zmq_context, ltun_t* tun) {
         } else if (nbytes > MTU) {
             tun_debug("warning: some message got truncated by %d (%d - %d), this means the MTU is too low for you!", nbytes - MTU, nbytes, MTU);
         }
-        ltun_write(tun, sbuffer, nbytes);
+        tun.write(sbuffer, nbytes);
     }
     exit:
     if (socket)
         zmq_close(socket);
 }
 
-void tun_thread_dt(void* zmq_context, ltun_t* tun) {
+void tun_thread_dt(void* zmq_context, const Tun& tun) {
 
     void *socket = zmq_socket(zmq_context, ZMQ_PUSH);
 
@@ -58,7 +58,7 @@ void tun_thread_dt(void* zmq_context, ltun_t* tun) {
     // tell_to_other_threads_the_tun2irc_socket_is_binded
     tun_debug("[data] created tun (data) thread!");
     while (1) {
-        int nbytes = ltun_read(tun, sbuffer, MTU);
+        int nbytes = tun.read(sbuffer, MTU);
         if (nbytes > 0) {
             tun_debug("got %d from tun", nbytes);
         }
@@ -73,7 +73,7 @@ void tun_thread_dt(void* zmq_context, ltun_t* tun) {
 }
 
 
-void tun_thread(void* zmq_context, ltun_t* tun) {
+void tun_thread(void* zmq_context, const Tun& tun) {
 
     std::thread zmq_th([zmq_context,tun]() {
         return tun_thread_zmq(zmq_context, tun);

@@ -3,5 +3,5 @@
 
 #include "ltun.h"
 
-void tun_thread(void* zmq_context, ltun_t* tun);
+void tun_thread(void* zmq_context, const Tun& tun);
 #endif
