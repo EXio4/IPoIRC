@@ -15,7 +15,7 @@
 #include "helpers.h"
 #include "base64.h"
 
-void irc_thread_zmq(irc_closure self) {
+void irc_thread_zmq(irc_closure& self) {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     char *final_line = (char*)malloc(sizeof(char)*MTU*2); // worst thing that can happen (I hope)
     char *b64 = NULL;
@@ -80,7 +80,7 @@ void irc_thread_zmq(irc_closure self) {
 
 }
 
-void irc_thread_net(irc_closure self) {
+void irc_thread_net(irc_closure& self) {
     irc_callbacks_t callbacks;
     irc_ctx_t ctx;
 
@@ -155,12 +155,12 @@ void irc_thread(irc_closure self) {
 
     }
 
-    std::thread zm([self]() {
+    std::thread zm([&]() {
         return irc_thread_zmq(self);
     });
 
     while (1) {
-        std::thread th([self]() {
+        std::thread th([&]() {
             return irc_thread_net(self);
         });
         th.join();
