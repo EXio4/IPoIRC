@@ -2,6 +2,7 @@
 #define IPOIRC_H
 
 #include "build-libircclient.h"
+#include <regex>
 
 #define MAX_IRC_THREADS 20
 
@@ -11,8 +12,8 @@ typedef struct irc_closure {
     void                *context;
 
     char                *netid;
-    void                *regex;
-    void                *regex_final;
+    std::regex regex;
+    std::regex regex_final;
     char                *nick  ,
                         *pass;
     char                *server,

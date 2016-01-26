@@ -10,9 +10,6 @@
 #include "irc.h"
 #include "irc_helpers.h"
 
-// helper macro for event_message
-#define parse   ((__parse(ctx->self, lin, netid, data, vc)))
-
 void event_connect(irc_session_t *session, const char *event, const char *origin, const char **params, unsigned int count) {
     irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
 
@@ -28,20 +25,6 @@ void event_join(irc_session_t *session, const char *event, const char *origin, c
 }
 
 
-// helper function for event_message
-int __parse(irc_closure self, char *lin, char* netid, char *data, int *vc) {
-
-    snprintf(netid, 511, "%.*s", vc[3] - vc[2], lin + vc[2]);
-
-    if (strcmp(netid, self.netid) == 0) {
-        return 0; // same id means same client, ignore
-    }
-
-    snprintf(data , 511, "%.*s", vc[5] - vc[4], lin + vc[4]);
-
-    return 1;
-}
-
 void event_message(irc_session_t *session, const char *event, const char *origin, const char **params, unsigned int count) {
 
     irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
@@ -49,9 +32,6 @@ void event_message(irc_session_t *session, const char *event, const char *origin
     // shutup compiler complaining about unused variables
     (void) event; (void) count;
 
-    char *lin    = NULL;
-    char *netid  = NULL;
-    char *data   = NULL;
     char *nick   = (char*)malloc(sizeof(char)*256);
 
     char *st     = NULL;
@@ -60,32 +40,27 @@ void event_message(irc_session_t *session, const char *event, const char *origin
 
     irc_target_get_nick(origin, nick, 255);
 
-    if (ctx->self.xid != 0) goto out;
+    if (ctx->self.xid == 0 && params[1]) {
 
-    if (params[1]) {
-        lin   = strdup(params[1]);
-        netid = (char*)malloc(sizeof(char)*512);
-        data  = (char*)malloc(sizeof(char)*512);
+        std::string lin = params[1];
+        std::string netid;
+        std::string data;
 
-        //if (!netid || !data || !lin) goto clean;
+        bool final_match = false;
+        std::smatch p_match;
 
-        int vc[9];
-
-        int rc = 0;
-
-        // note: we assume the regex matches *always* the id and the data, for making the code smaller and simpler
-
-        rc = pcre_exec((const pcre *)ctx->self.regex_final, NULL, lin, (int)strlen(lin), 0, 0, vc, 9);
-        if (rc >= 0 && !parse)
-                goto clean; // failed parsing
-
-        if (rc >= 0) rc = DONE;
-
-        if (rc < 0) {
-            rc = pcre_exec((const pcre *)ctx->self.regex, NULL, lin, (int)strlen(lin), 0, 0, vc, 9);
-            if (rc < 0 || !parse)
-                goto clean; // no match with the final nor the "normal"
+        if (std::regex_match(lin, p_match, ctx->self.regex_final) && p_match.size() == 2+1) {
+            final_match = true;
+            netid = p_match[1];
+            data  = p_match[2];
+        } else if (std::regex_match(lin, p_match, ctx->self.regex) && p_match.size() == 2+1) {
+            final_match = false;
+            netid = p_match[1];
+            data  = p_match[2];
+        } else {
+            return;
         }
+        if (netid == ctx->self.netid) return;
 
         HASH_FIND_STR((ctx->ds), nick, buf);
 
@@ -101,35 +76,25 @@ void event_message(irc_session_t *session, const char *event, const char *origin
         // ugly workaround to a bug that comes from nonwhere, try to know why it doesn't work somewhen
         {
             char buffer[MTU*4] = {0};
-            snprintf(buffer, MTU*4-1, "%s%s", buf->dt, data);
+            snprintf(buffer, MTU*4-1, "%s%s", buf->dt, data.c_str());
             snprintf(buf->dt, MTU*4-1, "%s", buffer);
         }
 
 
-        if (rc != DONE) goto clean; // data already added, but there is still more data to come
-        {
+        if (final_match) {
             int z, len = 0;
             len = debase64(buf->dt, &st);
             if (len < 1) {
                 irc_debug(ctx->self, "error when decoding base64 buffer (%d)", len);
-                goto iclean;
-            }
-
-            if ((z = zmq_send(ctx->data, st, len, 0)) < 0) {
+            } else if ((z = zmq_send(ctx->data, st, len, 0)) < 0) {
                     irc_debug(ctx->self, "error when trying to send a message to the tun (warning, this WILL result in missing packets!)", zmq_strerror(errno));
             }
+            memset(buf->dt, 0, strlen(buf->dt));
         };
-        iclean:
-        memset(buf->dt, 0, strlen(buf->dt));
 
-        clean:
-        if (lin) free(lin);
-        if (netid) free(netid);
-        if (data) free(data);
-        if (st) free(st);
+
     }
 
-    out:
     if (nick) free(nick);
 }
 

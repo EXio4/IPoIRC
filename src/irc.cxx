@@ -135,24 +135,12 @@ void irc_thread_net(irc_closure& self) {
 
 void irc_thread(irc_closure self) {
 
-    {
-        // should be compiled in main thread, not here
-        const char *error;
-        int erroroffset;
-
-        self.regex = (void*)pcre_compile(REGEX, 0, &error, &erroroffset, NULL);
-
-        if (!self.regex) {
-            irc_debug(self, "(irc_thread) error compiling regex (%s)", REGEX);
-            return;
-        }
-
-        self.regex_final = (void*)pcre_compile(REGEX_FINAL, 0, &error, &erroroffset, NULL);
-        if (!self.regex_final) {
-            irc_debug(self, "(irc_thread) error compiling regex (%s)", REGEX);
-            return;
-        }
-
+    try {
+        self.regex = REGEX;
+        self.regex_final = REGEX_FINAL;
+    } catch (std::regex_error const &e) {
+        irc_debug(self, "error loading regex(es)");
+        return;
     }
 
     std::thread zm([&]() {
