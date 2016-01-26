@@ -192,6 +192,7 @@ int main(int argc, char **argv) {
         std::thread th([cl]() {
             return irc_thread(cl);
         });
+        th.detach();
     }
 
 

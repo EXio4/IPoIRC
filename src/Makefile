@@ -4,7 +4,6 @@ CXXFLAGS ?= -Wall -Wextra -O0 -g `dnet-config --cflags` -std=c++11 -Wno-writable
 LIBS = -lpthread `dnet-config --libs` -lzmq -lircclient -lcrypto -lm -lbsd -lpcre -lconfuse
 OBJS = ipoirc.o irc.o irc_events.o irc_helpers.o ltun.o tun.o tun_helpers.o helpers.o base64.o
 TARGET = ipoirc
-CXX = clang++
 
 .build-gen:
 	@echo '/**' > build-gen.h
