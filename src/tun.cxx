@@ -61,9 +61,9 @@ void tun_thread_dt(void* zmq_context, const Tun& tun) {
         int nbytes = tun.read(sbuffer, MTU);
         if (nbytes > 0) {
             tun_debug("got %d from tun", nbytes);
-        }
-        if (zmq_send(socket, sbuffer, nbytes, 0) < 0) {
-            tun_debug("error when trying to send a message to the irc thread (warning, we continue here!)", zmq_strerror(errno));
+            if (zmq_send(socket, sbuffer, nbytes, 0) < 0) {
+                tun_debug("error when trying to send a message to the irc thread (warning, we continue here!)", zmq_strerror(errno));
+            }
         }
     }
 
