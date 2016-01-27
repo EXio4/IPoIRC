@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
 
         debug("running as %d", getuid());
 
-        std::thread tun_th([zmq_context,tun_handle]() {
+        std::thread tun_th([zmq_context,&tun_handle]() {
             return tun_thread(zmq_context, tun_handle);
         });
 
