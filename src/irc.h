@@ -1,19 +1,13 @@
 #ifndef IPOIRC_IRC_H
 #define IPOIRC_IRC_H
 #include "ipoirc.h"
-#include "uthash.h"
-
-typedef struct dbuf {
-    char             nick[128];
-    char            *dt;
-    UT_hash_handle   hh;
-} dbuf;
+#include <map>
 
 typedef struct irc_ctx_t {
     char                *channel;
     char                *nick;
     irc_closure          self;
-    dbuf                *ds;
+    std::map<std::string,char*> dt;
     void                *data;
 } irc_ctx_t;
 

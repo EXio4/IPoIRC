@@ -102,7 +102,6 @@ void irc_thread_net(irc_closure& self) {
     ctx.nick    = (char*)malloc(sizeof(char)*512);
     snprintf(ctx.nick, 511, self.nick, rand()%2048+1);
     ctx.self    = self;
-    ctx.ds      = NULL;
     ctx.data    = socket; // WE ARE PASSING A THREAD-UNSAFE SOCKET HERE!
 
     self.irc_s = irc_create_session(&callbacks);

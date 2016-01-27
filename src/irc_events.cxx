@@ -32,13 +32,14 @@ void event_message(irc_session_t *session, const char *event, const char *origin
     // shutup compiler complaining about unused variables
     (void) event; (void) count;
 
-    char *nick   = (char*)malloc(sizeof(char)*256);
+    std::string nick;
+    {
+        char *c_nick   = (char*)malloc(sizeof(char)*256);
+        if (!c_nick) return;
+        irc_target_get_nick(origin, c_nick, 255);
+        nick = c_nick;
+    }
 
-    char *st     = NULL;
-
-    dbuf* buf = NULL;
-
-    irc_target_get_nick(origin, nick, 255);
 
     if (ctx->self.xid == 0 && params[1]) {
 
@@ -49,7 +50,7 @@ void event_message(irc_session_t *session, const char *event, const char *origin
         bool final_match = false;
         std::smatch p_match;
 
-        if (std::regex_match(lin, p_match, ctx->self.regex_final) && p_match.size() == 2+1) {
+        if  (std::regex_match(lin, p_match, ctx->self.regex_final) && p_match.size() == 2+1) {
             final_match = true;
             netid = p_match[1];
             data  = p_match[2];
@@ -62,40 +63,35 @@ void event_message(irc_session_t *session, const char *event, const char *origin
         }
         if (netid == ctx->self.netid) return;
 
-        HASH_FIND_STR((ctx->ds), nick, buf);
+        char* &buf = ctx->dt[nick];
 
         if (!buf) {
-            irc_debug(ctx->self, "allocating a new buffer structure for %s", nick);
-            buf = (dbuf*)malloc(sizeof(dbuf));
-            buf->dt = (char*)malloc(sizeof(char)*MTU*4);
-            memset(buf->dt, 0, MTU*4);
-            strncpy(buf->nick, nick, 127);
-            HASH_ADD_STR((ctx->ds), nick, buf);
+            irc_debug(ctx->self, "allocating a new buffer structure for %s", nick.c_str());
+            buf = (char*)malloc(sizeof(char)*MTU*4);
+            memset(buf, 0, MTU*4);
         }
 
         // ugly workaround to a bug that comes from nonwhere, try to know why it doesn't work somewhen
         {
             char buffer[MTU*4] = {0};
-            snprintf(buffer, MTU*4-1, "%s%s", buf->dt, data.c_str());
-            snprintf(buf->dt, MTU*4-1, "%s", buffer);
+            snprintf(buffer, MTU*4-1, "%s%s", buf, data.c_str());
+            snprintf(buf, MTU*4-1, "%s", buffer);
         }
 
 
         if (final_match) {
-            int z, len = 0;
-            len = debase64(buf->dt, &st);
+            char *st = NULL;
+            int len = debase64(buf, &st);
             if (len < 1) {
                 irc_debug(ctx->self, "error when decoding base64 buffer (%d)", len);
-            } else if ((z = zmq_send(ctx->data, st, len, 0)) < 0) {
+            } else if (zmq_send(ctx->data, st, len, 0) < 0) {
                     irc_debug(ctx->self, "error when trying to send a message to the tun (warning, this WILL result in missing packets!)", zmq_strerror(errno));
             }
-            memset(buf->dt, 0, strlen(buf->dt));
+            memset(buf, 0, strlen(buf));
         };
 
 
     }
-
-    if (nick) free(nick);
 }
 
 
