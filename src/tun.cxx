@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include <thread>
 #include <zmq.h>
 
@@ -57,13 +58,15 @@ void tun_thread_dt(void* zmq_context, const Tun& tun) {
 
     // tell_to_other_threads_the_tun2irc_socket_is_binded
     tun_debug("[data] created tun (data) thread!");
-    while (1) {
-        int nbytes = tun.read(sbuffer, MTU);
+    int nbytes;
+    while ((nbytes = tun.read(sbuffer, MTU)) != 0) {
         if (nbytes > 0) {
             tun_debug("got %d from tun", nbytes);
             if (zmq_send(socket, sbuffer, nbytes, 0) < 0) {
                 tun_debug("error when trying to send a message to the irc thread (warning, we continue here!)", zmq_strerror(errno));
             }
+        } else {
+            tun_debug("error reading data from tun: %s", strerror(errno));
         }
     }
 

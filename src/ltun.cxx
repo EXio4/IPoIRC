@@ -71,8 +71,8 @@ Tun::~Tun() {
 
 
 int Tun::read(char *buf, uint16_t len) const {
-    return ::read(fd, buf, len);
+    return ::read(fd, buf, (int)len);
 };
 int Tun::write(const char *buf, uint16_t len) const {
-    return ::write(fd, buf, len);
+    return ::write(fd, buf, (int)len);
 };
