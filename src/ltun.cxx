@@ -17,7 +17,6 @@
 #include "ltun.h"
 
 Tun::Tun(std::string dev, uint16_t mtu, std::string local, std::string remote) {
-    int fd = -1;
     intf = intf_open();
     if (!intf)
             throw TunError("Error allocating intf");
@@ -40,7 +39,6 @@ Tun::Tun(std::string dev, uint16_t mtu, std::string local, std::string remote) {
         throw TunError("ioctl error");
     }
 
-    fd   = fd;
     name = dev;
 
 
