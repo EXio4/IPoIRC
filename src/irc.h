@@ -7,7 +7,7 @@ typedef struct irc_ctx_t {
     char                *channel;
     char                *nick;
     irc_closure          self;
-    std::map<std::string,char*> dt;
+    std::map<std::string,std::string> dt;
     void                *data;
 } irc_ctx_t;
 

@@ -63,21 +63,9 @@ void event_message(irc_session_t *session, const char *event, const char *origin
         }
         if (netid == ctx->self.netid) return;
 
-        char* &buf = ctx->dt[nick];
+        std::string &buf = ctx->dt[nick];
 
-        if (!buf) {
-            irc_debug(ctx->self, "allocating a new buffer structure for %s", nick.c_str());
-            buf = (char*)malloc(sizeof(char)*MTU*4);
-            memset(buf, 0, MTU*4);
-        }
-
-        // ugly workaround to a bug that comes from nonwhere, try to know why it doesn't work somewhen
-        {
-            char buffer[MTU*4] = {0};
-            snprintf(buffer, MTU*4-1, "%s%s", buf, data.c_str());
-            snprintf(buf, MTU*4-1, "%s", buffer);
-        }
-
+        buf += data;
 
         if (final_match) {
             char *st = NULL;
@@ -87,7 +75,7 @@ void event_message(irc_session_t *session, const char *event, const char *origin
             } else if (zmq_send(ctx->data, st, len, 0) < 0) {
                     irc_debug(ctx->self, "error when trying to send a message to the tun (warning, this WILL result in missing packets!)", zmq_strerror(errno));
             }
-            memset(buf, 0, strlen(buf));
+            buf = "";
         };
 
 

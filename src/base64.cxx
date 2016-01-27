@@ -1,3 +1,5 @@
+#include <string>
+
 #include <math.h>
 #include <string.h>
 #include <openssl/sha.h>
@@ -44,8 +46,9 @@ int calcDecodeLength(const char* b64input) {
 }
 
 
-int debase64(char* b64message, char** buffer) {
+int debase64(const std::string &const_b64msg, char** buffer) {
     BIO *bio, *b64;
+    char *b64message = strdup(const_b64msg.c_str());
     int decodeLen = calcDecodeLength(b64message),
     len = 0;
     *buffer = (char*)malloc(decodeLen+1);
@@ -60,6 +63,7 @@ int debase64(char* b64message, char** buffer) {
 
     BIO_free_all(bio);
     fclose(stream);
+    free(b64message);
 
     if (len != decodeLen) {
         return -1;
