@@ -11,6 +11,6 @@
 
 // internals
 
-#define MTU 1472
+#define MTU 750
 
 #endif

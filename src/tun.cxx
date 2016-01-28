@@ -28,7 +28,7 @@ void tun_thread_zmq(void* zmq_context, const Tun& tun) {
 
     int nbytes = -1;
     while ((nbytes = zmq_recv(socket, sbuffer, MTU, 0)) >= 0) {
-        tun_debug() << "got " << nbytes << "bytes" << std::endl;
+        tun_debug() << "got " << nbytes << " bytes" << std::endl;
         if (nbytes == 0) {
             continue;
         } else if (nbytes > MTU) {
