@@ -76,10 +76,8 @@ void tun_thread(void* zmq_context, const Tun& tun) {
         return tun_thread_zmq(zmq_context, tun);
     });
 
-    std::thread dt_th([zmq_context,&tun]() {
-        return tun_thread_dt(zmq_context, tun);
-    });
-
-    dt_th.join();
+    {
+        tun_thread_dt(zmq_context, tun);
+    }
     zmq_th.join();
 }

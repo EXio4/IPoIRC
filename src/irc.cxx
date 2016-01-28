@@ -148,10 +148,7 @@ void irc_thread(irc_closure self) {
     });
 
     while (1) {
-        std::thread th([&]() {
-            return irc_thread_net(self);
-        });
-        th.join();
+        irc_thread_net(self);
         irc_debug(self) << "irc thread died, reconnecting in 2s.." << std::endl;
         sleep(2);
     }
