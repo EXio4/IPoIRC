@@ -57,7 +57,7 @@ void tun_thread_dt(void* zmq_context, const Tun& tun) {
     int nbytes = -1;
     while ((nbytes = tun.read(sbuffer, MTU)) != 0) {
         if (nbytes > 0) {
-            tun_debug() << "got " << nbytes << "from tun" << std::endl;
+            tun_debug() << "got " << nbytes << " from tun" << std::endl;
             if (zmq_send(socket, sbuffer, nbytes, 0) < 0) {
                 tun_debug() << "error when trying to send a message to the irc thread (warning, we continue here!) :" << zmq_strerror(errno) << std::endl;
             }
