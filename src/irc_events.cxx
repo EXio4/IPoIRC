@@ -69,7 +69,7 @@ void event_message(irc_session_t *session, const char *event, const char *origin
 
         if (final_match) {
             char *st = NULL;
-            int len = debase64(buf, &st);
+            int len = debase64(buf , &st);
             if (len < 1) {
                 irc_debug(ctx->self, "error when decoding base64 buffer (%d)", len);
             } else if (zmq_send(ctx->data, st, len, 0) < 0) {

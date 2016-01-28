@@ -12,16 +12,27 @@
 #include "irc_events.h"
 #include "ipoirc.h"
 #include "irc_helpers.h"
-#include "helpers.h"
 #include "base64.h"
+
+std::vector<std::string> split(const std::string& str, int splitLength) {
+   int NumSubstrings = str.length() / splitLength;
+   std::vector<std::string> ret;
+
+   for (auto i = 0; i < NumSubstrings; i++) {
+        ret.push_back(str.substr(i * splitLength, splitLength));
+   }
+
+   // If there are leftover characters, create a shorter item at the end.
+   if (str.length() % splitLength != 0) {
+        ret.push_back(str.substr(splitLength * NumSubstrings));
+   }
+
+   return ret;
+}
 
 void irc_thread_zmq(irc_closure& self) {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     char *final_line = (char*)malloc(sizeof(char)*MTU*2); // worst thing that can happen (I hope)
-    char *b64 = NULL;
-    char **b64s = (char**)malloc(sizeof(char)*MTU);
-    int i = 0;
-    int lines = 0;
 
     void *socket = NULL;
 
@@ -49,24 +60,14 @@ void irc_thread_zmq(irc_closure& self) {
             nbytes = MTU;
         }
 
-        base64(sbuffer, nbytes, &b64);
-        // split newlines
-        lines = split(b64, b64s);
-        for (i=0; i<lines; i++) {
-            char *format = (char*)malloc(sizeof(char)*16);
-            if (i == (lines-1)) {
-                snprintf(format, 15, "%s", FORMAT_FINAL);
-            } else {
-                snprintf(format, 15, "%s", FORMAT);
-            }
-
-            snprintf(final_line, (MTU*2)-1, format, self.netid, b64s[i]);
+        std::vector<std::string> lines = split(base64(sbuffer, nbytes), 128);
+        for (size_t i=0; i<lines.size()-1; i++) {
+            snprintf(final_line, (MTU*2)-1, FORMAT, self.netid, lines[i].c_str());
             irc_cmd_msg(self.irc_s, self.chan, final_line);
-
-            free(format);
         }
+        snprintf(final_line, (MTU*2)-1, FORMAT_FINAL, self.netid, lines[lines.size()-1].c_str());
+        irc_cmd_msg(self.irc_s, self.chan, final_line);
 
-        free(b64);
     }
 
     exit:

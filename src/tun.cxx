@@ -8,7 +8,6 @@
 
 #include "ipoirc.h"
 #include "config.h"
-#include "helpers.h"
 #include "ltun.h"
 #include "tun.h"
 #include "tun_helpers.h"

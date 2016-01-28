@@ -11,25 +11,32 @@
 #include "base64.h"
 
 
-// encoding/decoding code from: http://doctrina.org/Base64-With-OpenSSL-C-API.html
+// encoding/decoding code based from: http://doctrina.org/Base64-With-OpenSSL-C-API.html
 
-
-int base64(const char* message, int len, char** buffer) {
+std::string base64(const char* message, int len) {
     BIO *bio, *b64;
     FILE* stream;
 
-    *buffer = (char*)malloc(len*5+1); // avoiding problems with missing chars when splitting the strings (added newlines)
+    char *buffer = (char*)malloc(len*5+1); // avoiding problems with missing chars when splitting the strings (added newlines)
 
-    stream = fmemopen(*buffer, (len*5)+1, "w");
+    stream = fmemopen(buffer, (len*5)+1, "w");
     b64 = BIO_new(BIO_f_base64());
     bio = BIO_new_fp(stream, BIO_NOCLOSE);
     bio = BIO_push(b64, bio);
-    int ret = BIO_write(bio, message, len);
+    BIO_write(bio, message, len);
     BIO_flush(bio);
     BIO_free_all(bio);
     fclose(stream);
 
-    return ret;
+    /* awful hacky shit until I manage to use a C++friendly base64 library */
+    std::string rest;
+    int l = strlen(buffer);
+    for (int i=0; i<l; i++) {
+        if (buffer[i] == ' ') continue;
+        rest += buffer[i];
+    };
+
+    return rest;
 }
 
 

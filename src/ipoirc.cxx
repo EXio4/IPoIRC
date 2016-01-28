@@ -14,7 +14,6 @@
 #include "tun.h"
 #include "config.h"
 #include "ltun.h"
-#include "helpers.h"
 #include "ipoirc.h"
 
 void debug(const char * format, ...) {
