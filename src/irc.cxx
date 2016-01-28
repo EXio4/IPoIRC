@@ -13,7 +13,7 @@
 #include "irc_events.h"
 #include "ipoirc.h"
 #include "irc_helpers.h"
-#include "base64.h"
+#include "base85.h"
 
 std::vector<std::string> split(const std::string& str, int splitLength) {
    int NumSubstrings = str.length() / splitLength;
@@ -63,7 +63,7 @@ void irc_thread_zmq(irc_closure& self) {
 
         std::regex netid_reg    { "%N" };
         std::regex message_reg  { "%M" };
-        std::vector<std::string> lines = split(base64(sbuffer, nbytes), 128);
+        std::vector<std::string> lines = split(Base85::encode(sbuffer, nbytes), 128);
         for (size_t i=0; i<lines.size()-1; i++) {
             std::string final_line = std::regex_replace(std::regex_replace(FORMAT, netid_reg, self.netid), message_reg, lines[i]);
             irc_cmd_msg(self.irc_s, self.chan.c_str(), final_line.c_str());
