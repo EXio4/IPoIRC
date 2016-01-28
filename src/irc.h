@@ -4,8 +4,8 @@
 #include <map>
 
 typedef struct irc_ctx_t {
-    char                *channel;
-    char                *nick;
+    std::string channel;
+    std::string nick;
     irc_closure          self;
     std::map<std::string,std::string> dt;
     void                *data;

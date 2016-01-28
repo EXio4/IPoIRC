@@ -17,7 +17,7 @@ void event_connect(irc_session_t *session, const char *event, const char *origin
     (void) event; (void) origin; (void) params; (void) count;
 
     irc_debug(ctx->self) << "(" << ctx->nick << ") connected to irc" << std::endl;
-    irc_cmd_join(session, ctx->channel, 0);
+    irc_cmd_join(session, ctx->channel.c_str(), 0);
 }
 
 void event_join(irc_session_t *session, const char *event, const char *origin, const char **params, unsigned int count) {

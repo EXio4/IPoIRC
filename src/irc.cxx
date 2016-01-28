@@ -1,4 +1,5 @@
 #include <thread>
+#include <regex>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -60,13 +61,15 @@ void irc_thread_zmq(irc_closure& self) {
             nbytes = MTU;
         }
 
+        std::regex netid_reg    { "{netid}"   };
+        std::regex message_reg  { "{message}" };
         std::vector<std::string> lines = split(base64(sbuffer, nbytes), 128);
         for (size_t i=0; i<lines.size()-1; i++) {
-            snprintf(final_line, (MTU*2)-1, FORMAT, self.netid, lines[i].c_str());
-            irc_cmd_msg(self.irc_s, self.chan, final_line);
+            std::string final_line = std::regex_replace(std::regex_replace(FORMAT, netid_reg, self.netid), message_reg, lines[i]);
+            irc_cmd_msg(self.irc_s, self.chan.c_str(), final_line.c_str());
         }
-        snprintf(final_line, (MTU*2)-1, FORMAT_FINAL, self.netid, lines[lines.size()-1].c_str());
-        irc_cmd_msg(self.irc_s, self.chan, final_line);
+        std::string final_line = std::regex_replace(std::regex_replace(FORMAT_FINAL, netid_reg, self.netid), message_reg, lines[lines.size()-1]);
+        irc_cmd_msg(self.irc_s, self.chan.c_str(), final_line.c_str());
 
     }
 
@@ -99,9 +102,8 @@ void irc_thread_net(irc_closure& self) {
     callbacks.event_privmsg = event_message;
     callbacks.event_channel = event_message;
 
-    ctx.channel = strdup(self.chan);
-    ctx.nick    = (char*)malloc(sizeof(char)*512);
-    snprintf(ctx.nick, 511, self.nick, rand()%2048+1);
+    ctx.channel = self.chan;
+    ctx.nick    = std::regex_replace(self.nick.c_str(), std::regex("%d"), std::to_string(rand()%2048 + 1));
     ctx.self    = self;
     ctx.data    = socket; // WE ARE PASSING A THREAD-UNSAFE SOCKET HERE!
 
@@ -115,12 +117,12 @@ void irc_thread_net(irc_closure& self) {
 
     irc_debug(self) << "created irc_session, connecting to " << self.server << ":6667 as " << ctx.nick << "!" << std::endl;
 
-    if (irc_connect (self.irc_s, self.server, self.port, self.pass, ctx.nick, "ipoirc", "IP over IRC - http://github.com/EXio4/IPoIRC")) {
+    if (irc_connect (self.irc_s, self.server.c_str(), self.port, self.pass.c_str(), ctx.nick.c_str(), "ipoirc", "IP over IRC - http://github.com/EXio4/IPoIRC")) {
         irc_debug(self) << "error when connecting to irc (" << irc_strerror(irc_errno(self.irc_s)) << ")" << std::endl;
         goto exit;
     }
 
-    sleep(1); // wait for the network to answer THIS SHOULD BE DONE IN A RIGHT WAY!
+    sleep(2); //I still don't know how to solve this issue, we need to wait for something yet we don't know for how long.
 
     (void) irc_run(self.irc_s);
 

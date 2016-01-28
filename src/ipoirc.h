@@ -12,13 +12,13 @@ typedef struct irc_closure {
     int                  xid;
     void                *context;
 
-    char                *netid;
+    std::string netid;
     std::regex regex;
     std::regex regex_final;
-    char                *nick  ,
-                        *pass;
-    char                *server,
-                        *chan;
+    std::string         nick  ,
+                        pass;
+    std::string server,
+                chan;
     int                  port;
     irc_session_t       *irc_s;
 } irc_closure;

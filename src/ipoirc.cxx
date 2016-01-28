@@ -164,6 +164,7 @@ int main(int argc, char **argv) {
 
 
         for (i=0; i<threads; i++) {
+            /* note: every thread gets its own copies of netid, nick, pass, etc */
             irc_closure cl;
             cl.xid     = i;
             cl.context = zmq_context;
