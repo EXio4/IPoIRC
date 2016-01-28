@@ -15,49 +15,46 @@
 void tun_thread_zmq(void* zmq_context, const Tun& tun) {
 
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
-    void *socket = NULL;
+    if (!sbuffer) return;
 
-    if (!sbuffer) goto exit;
-    socket = zmq_socket(zmq_context, ZMQ_PULL); // client of the tun_socket
+    void *socket = zmq_socket(zmq_context, ZMQ_PULL);
+    if (!socket) return;
+
     if (zmq_bind(socket, "inproc://#irc_to_#tun")) {
         tun_debug() << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
-        goto exit;
+        zmq_close(socket);
+        return;
     }
-    while (1) {
-        tun_debug() << ">> zmq_recv <<" << std::endl;
-        memset(sbuffer, 0, MTU);
-        int nbytes = zmq_recv(socket, sbuffer, MTU, 0);
+
+    int nbytes = -1;
+    while ((nbytes = zmq_recv(socket, sbuffer, MTU, 0)) >= 0) {
         tun_debug() << "got " << nbytes << "bytes" << std::endl;
-        if (nbytes < 0 ) {
-            tun_debug() << "error when reading from zeromq socket" << std::endl;
-            goto exit; // a cute break here!
-        } else if (nbytes == 0) {
+        if (nbytes == 0) {
             continue;
         } else if (nbytes > MTU) {
             tun_debug() << "warning: some message got truncated by " << nbytes - MTU << "(" << nbytes << " - " << MTU << "), this means the MTU is too low for you!" << std::endl;
         }
         tun.write(sbuffer, nbytes);
     }
-    exit:
-    if (socket)
-        zmq_close(socket);
+
+    zmq_close(socket);
 }
 
 void tun_thread_dt(void* zmq_context, const Tun& tun) {
 
-    void *socket = zmq_socket(zmq_context, ZMQ_PUSH);
-
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
-    if (!sbuffer) goto exit;
+    if (!sbuffer) return;
+
+    void *socket = zmq_socket(zmq_context, ZMQ_PUSH);
+    if (!socket) return;
 
     if (zmq_bind(socket, "inproc://#tun_to_#irc")) {
         tun_debug() << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
-        goto exit;
+        zmq_close(socket);
+        return;
     }
 
-    // tell_to_other_threads_the_tun2irc_socket_is_binded
-    tun_debug() << "[data] created tun (data) thread!" << std::endl;
-    int nbytes;
+    int nbytes = -1;
     while ((nbytes = tun.read(sbuffer, MTU)) != 0) {
         if (nbytes > 0) {
             tun_debug() << "got " << nbytes << "from tun" << std::endl;
@@ -69,9 +66,7 @@ void tun_thread_dt(void* zmq_context, const Tun& tun) {
         }
     }
 
-    exit:
-    if (socket)
-        zmq_close(socket);
+    zmq_close(socket);
 }
 
 
