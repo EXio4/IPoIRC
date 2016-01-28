@@ -1,4 +1,4 @@
-
+#include <iostream>
 #include <thread>
 
 #include <stdio.h>
@@ -16,20 +16,9 @@
 #include "ltun.h"
 #include "ipoirc.h"
 
-void debug(const char * format, ...) {
-    time_t curtime = time (NULL);
-    struct tm *loctime = localtime(&curtime);
-    char timestamp[128];
-    strftime(timestamp, 127, "%y-%m-%d %H:%M:%S", loctime);
 
-    char buffer[512];
-    va_list args;
-    va_start(args, format);
-
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    printf("%s | [main] %s\n", timestamp, buffer);
-
-    va_end(args);
+std::ostream& debug() {
+    return debug_gen("main");
 }
 
 void usage(char *h) {
@@ -135,7 +124,7 @@ int main(int argc, char **argv) {
         cfg_t *cfg = cfg_init(opts, CFGF_NONE);
 
         if (cfg_parse(cfg, config) != CFG_SUCCESS) {
-            debug("error parsing config");
+            debug() << "error parsing config" << std::endl;
         }
 
         cfg_free(cfg);
@@ -143,7 +132,7 @@ int main(int argc, char **argv) {
 
 
     if (threads > MAX_IRC_THREADS) {
-        debug("WARNING: you can't define more than %d IRC threads, starting in single-thread mode\n", MAX_IRC_THREADS);
+        debug() << "WARNING: you can't define more than " << MAX_IRC_THREADS << " IRC threads, starting in single-thread mode" << std::endl;
         threads = 1;
     }
     if (threads < 1)
@@ -160,12 +149,12 @@ int main(int argc, char **argv) {
 
         if (getuid() == 0 && gid != 0 && uid != 0) {
             if (setgid(gid) != 0 || setuid(uid) != 0) {
-                debug("unable to drop privileges: %s", strerror(errno));
+                debug() << "unable to drop privileges: " << strerror(errno) << std::endl;
                 exit(1);
             }
         }
 
-        debug("running as %d", getuid());
+        debug() << "running as " << getuid() << std::endl;
 
         std::thread tun_th([zmq_context,&tun_handle]() {
             return tun_thread(zmq_context, tun_handle);
@@ -194,7 +183,7 @@ int main(int argc, char **argv) {
 
         tun_th.join();
     } catch(TunError const &e) {
-        debug("error setting up tun, are you root?");
+        debug() << "error setting up tun, are you root?" << std::endl;
     };
 
     return 0;

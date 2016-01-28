@@ -16,7 +16,7 @@ void event_connect(irc_session_t *session, const char *event, const char *origin
     // shutup compiler complaining about unused variables
     (void) event; (void) origin; (void) params; (void) count;
 
-    irc_debug(ctx->self, "(%s) connected to irc", ctx->nick);
+    irc_debug(ctx->self) << "(" << ctx->nick << ") connected to irc" << std::endl;
     irc_cmd_join(session, ctx->channel, 0);
 }
 
@@ -71,9 +71,9 @@ void event_message(irc_session_t *session, const char *event, const char *origin
             char *st = NULL;
             int len = debase64(buf , &st);
             if (len < 1) {
-                irc_debug(ctx->self, "error when decoding base64 buffer (%d)", len);
+                irc_debug(ctx->self) << "error when decoding base64 buffer (" << len << ")" << std::endl;
             } else if (zmq_send(ctx->data, st, len, 0) < 0) {
-                    irc_debug(ctx->self, "error when trying to send a message to the tun (warning, this WILL result in missing packets!)", zmq_strerror(errno));
+                    irc_debug(ctx->self) << "error trying to send a message to the tun (warning, this WILL result in missing packets!): " << zmq_strerror(errno) << std::endl;
             }
             buf = "";
         };
