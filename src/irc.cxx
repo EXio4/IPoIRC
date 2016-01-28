@@ -61,8 +61,8 @@ void irc_thread_zmq(irc_closure& self) {
             nbytes = MTU;
         }
 
-        std::regex netid_reg    { "{netid}"   };
-        std::regex message_reg  { "{message}" };
+        std::regex netid_reg    { "%N" };
+        std::regex message_reg  { "%M" };
         std::vector<std::string> lines = split(base64(sbuffer, nbytes), 128);
         for (size_t i=0; i<lines.size()-1; i++) {
             std::string final_line = std::regex_replace(std::regex_replace(FORMAT, netid_reg, self.netid), message_reg, lines[i]);
@@ -103,7 +103,7 @@ void irc_thread_net(irc_closure& self) {
     callbacks.event_channel = event_message;
 
     ctx.channel = self.chan;
-    ctx.nick    = std::regex_replace(self.nick.c_str(), std::regex("%d"), std::to_string(rand()%2048 + 1));
+    ctx.nick    = std::regex_replace(self.nick, std::regex("%d"), std::to_string(rand()%2048 + 1));
     ctx.self    = self;
     ctx.data    = socket; // WE ARE PASSING A THREAD-UNSAFE SOCKET HERE!
 

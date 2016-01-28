@@ -1,9 +1,9 @@
 #ifndef IPOIRC_CONFIG_H
 #define IPOIRC_CONFIG_H
 
-#define FORMAT  "@{netid}: {message}"
+#define FORMAT  "@%N: %M"
 
-#define FORMAT_FINAL "@{netid}::{message}"
+#define FORMAT_FINAL "@%N::%M"
 
 #define REGEX   "^@([a-zA-Z0-9]+): (.+)"
 

@@ -168,12 +168,14 @@ int main(int argc, char **argv) {
             irc_closure cl;
             cl.xid     = i;
             cl.context = zmq_context;
+            // netid, nick, chan, server are guaranteed to be NOT NULL
             cl.netid   = netid; // "socket id" (used in irc <-> irc communication)
             cl.nick    = nick;
-            cl.pass    = pass;
-            cl.server  = net;
-            cl.port    = port;
             cl.chan    = chan;
+            cl.server  = net;
+            if (pass)
+                cl.pass    = pass;
+            cl.port    = port;
             cl.irc_s   = NULL;
             std::thread th([cl]() {
                 return irc_thread(cl);
