@@ -5,7 +5,7 @@
 #include <pcre.h>
 #include "constants.h"
 #include "config.h"
-#include "base85.h"
+#include "b2t.h"
 #include "ipoirc.h"
 #include "irc.h"
 #include "irc_helpers.h"
@@ -69,7 +69,7 @@ void event_message(irc_session_t *session, const char *event, const char *origin
 
         if (final_match) {
             char *st = NULL;
-            int len = Base85::decode(buf , st);
+            int len = B2T::decode(buf , st);
             if (len < 1) {
                 irc_debug(ctx->self) << "error when decoding base64 buffer (" << len << ")" << std::endl;
             } else if (zmq_send(ctx->data, st, len, 0) < 0) {

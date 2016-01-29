@@ -1,7 +1,7 @@
-#ifndef IPOIRC_BASE85_H
-#define IPOIRC_BASE85_H
+#ifndef IPOIRC_B2T_H
+#define IPOIRC_B2T_H
 #include <string>
-namespace Base85 {
+namespace B2T {
     std::string encode(const char *, int);
     int decode(const std::string &, char*&);
 }
