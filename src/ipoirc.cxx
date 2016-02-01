@@ -7,7 +7,7 @@
 #include <stdarg.h>
 #include <time.h>
 #include <string.h>
-#include <confuse.h>
+#include <yaml-cpp/yaml.h>
 #include <zmq.h>
 
 #include "irc.h"
@@ -57,15 +57,15 @@ int main(int argc, char **argv) {
 
     void* zmq_context = zmq_ctx_new();
 
-    char *netid         = NULL;
-    char *nick          = NULL;
-    char *net           = NULL;
-    char *pass          = NULL;
+    std::string netid         = "";
+    std::string nick          = "";
+    std::string network       = "";
+    std::string password      = "";
     long int  port      = 6667;
-    char *chan          = NULL;
-    char *h1            = NULL;
-    char *h2            = NULL;
-    char *config        = NULL;
+    std::string channel       = "";
+    std::string localip       = "";
+    std::string remoteip      = "";
+    std::string config        = "";
     long int  threads   = 1;
     long int  gid       = 0;
     long int  uid       = 0;
@@ -79,17 +79,17 @@ int main(int argc, char **argv) {
                 break;
             case 'n': nick      = optarg;
                 break;
-            case 'i': net       = optarg;
+            case 'i': network   = optarg;
                 break;
             case 'x': port      = atoi(optarg);
                 break;
-            case 'p': pass      = optarg;
+            case 'p': password  = optarg;
                 break;
-            case 'c': chan      = optarg;
+            case 'c': channel   = optarg;
                 break;
-            case 'l': h1        = optarg;
+            case 'l': localip   = optarg;
                 break;
-            case 'r': h2        = optarg;
+            case 'r': remoteip  = optarg;
                 break;
             case 'U': uid       = atoi(optarg);
                 break;
@@ -105,29 +105,19 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (config) {
-        cfg_opt_t opts[] = {
-            CFG_SIMPLE_STR("netid",    &netid),
-            CFG_SIMPLE_STR("nick",     &nick),
-            CFG_SIMPLE_STR("network",  &net),
-            CFG_SIMPLE_STR("password", &pass),
-            CFG_SIMPLE_STR("channel",  &chan),
-            CFG_SIMPLE_STR("localip",  &h1),
-            CFG_SIMPLE_STR("remoteip", &h2),
-            CFG_SIMPLE_INT("port",     &port),
-            CFG_SIMPLE_INT("uid",      &uid),
-            CFG_SIMPLE_INT("gid",      &gid),
-            CFG_SIMPLE_INT("threads",  &threads),
-            CFG_END()
-        };
-
-        cfg_t *cfg = cfg_init(opts, CFGF_NONE);
-
-        if (cfg_parse(cfg, config) != CFG_SUCCESS) {
-            debug() << "error parsing config" << std::endl;
-        }
-
-        cfg_free(cfg);
+    if (config != "") {
+        YAML::Node cfg = YAML::LoadFile(config);
+        netid    = cfg["netid"   ] ? cfg["netid"   ].as<std::string>() : netid    ;
+        nick     = cfg["nick"    ] ? cfg["nick"    ].as<std::string>() : nick     ;
+        network  = cfg["network" ] ? cfg["network" ].as<std::string>() : network  ;
+        password = cfg["password"] ? cfg["password"].as<std::string>() : password ;
+        channel  = cfg["channel" ] ? cfg["channel" ].as<std::string>() : channel  ;
+        localip  = cfg["localip" ] ? cfg["localip" ].as<std::string>() : localip  ;
+        remoteip = cfg["remoteip"] ? cfg["remoteip"].as<std::string>() : remoteip ;
+        port     = cfg["port"    ] ? cfg["port"    ].as<int>        () : port     ;
+        uid      = cfg["uid"     ] ? cfg["uid"     ].as<int>        () : uid      ;
+        gid      = cfg["gid"     ] ? cfg["gid"     ].as<int>        () : gid      ;
+        threads  = cfg["threads" ] ? cfg["threads" ].as<int>        () : threads  ;
     };
 
 
@@ -138,13 +128,13 @@ int main(int argc, char **argv) {
     if (threads < 1)
         threads = 1;
 
-    if (netid == NULL || nick  == NULL ||
-        net   == NULL || chan  == NULL ||
-        h1    == NULL || h2    == NULL)
+    if (netid    == "" || nick     == "" ||
+        network  == "" || channel  == "" ||
+        localip  == "" || remoteip == "")
             usage(argv[0]);
 
     try {
-        Tun tun_handle("irc%d", MTU, h1, h2);
+        Tun tun_handle("irc%d", MTU, localip, remoteip);
 
 
         if (getuid() == 0 && gid != 0 && uid != 0) {
@@ -171,10 +161,9 @@ int main(int argc, char **argv) {
             // netid, nick, chan, server are guaranteed to be NOT NULL
             cl.netid   = netid; // "socket id" (used in irc <-> irc communication)
             cl.nick    = nick;
-            cl.chan    = chan;
-            cl.server  = net;
-            if (pass)
-                cl.pass    = pass;
+            cl.chan    = channel;
+            cl.server  = network;
+            cl.pass    = password;
             cl.port    = port;
             cl.irc_s   = NULL;
             std::thread th([cl]() {

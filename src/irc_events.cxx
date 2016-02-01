@@ -3,7 +3,6 @@
 #include <string.h>
 #include <zmq.h>
 #include <pcre.h>
-#include "constants.h"
 #include "config.h"
 #include "b2t.h"
 #include "ipoirc.h"

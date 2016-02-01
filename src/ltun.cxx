@@ -63,14 +63,18 @@ Tun::Tun(std::string dev, uint16_t mtu, std::string local, std::string remote) {
 }
 
 Tun::~Tun() {
-    close(fd);
-    intf_close(intf);
+    if (intf) {
+        close(fd);
+        intf_close(intf);
+    }
 }
 
 
 int Tun::read(char *buf, uint16_t len) const {
+    if (!intf) return -1;
     return ::read(fd, buf, (int)len);
 };
 int Tun::write(const char *buf, uint16_t len) const {
+    if (!intf) return -1;
     return ::write(fd, buf, (int)len);
 };
