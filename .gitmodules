@@ -1,0 +1,3 @@
+[submodule "libs/sol"]
+	path = libs/sol
+	url = https://github.com/Rapptz/sol/

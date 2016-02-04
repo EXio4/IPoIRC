@@ -5,7 +5,7 @@ A simple gateway of IP over IRC!
 
 ---
 
-### The basic usage
+### Basic usage
 
 From its usage:
 *<netid> <irc_nick> <irc_network> <irc_pass> <irc_channel> <local_ip> <remote_ip>*
@@ -27,11 +27,11 @@ note that the port is actually hardcoded to 6667
 
 ### Protocol
 
-As IPoIRC's protocol changes very fast, this is here as a warning, and as a placeholder for explaining it here in a future.
+PLACEHOLDER: IPoIRC's "Protocol" isn't stable
 
 ---
 
-#### Dependencies
+#### Building
 
 IPoIRC is actually using a hand-written Makefile, you need the following deps (using debian names):
 
@@ -41,6 +41,12 @@ IPoIRC is actually using a hand-written Makefile, you need the following deps (u
 * libircclient-dev
 * libpcre3-dev
 * libzmq3-dev
-* libyaml-cpp-dev
+* liblua5.2-dev
 
-Note that IPoIRC uses ZeroMQ 3 that is only available, at the time of writing the README, in Debian Sid and Ubuntu >13.10.
+IPoIRC is using submodules, thus meaning you might need to run
+```sh
+
+git submodule init
+git submodule updater
+
+```

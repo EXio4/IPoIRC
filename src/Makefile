@@ -1,6 +1,6 @@
 PREFIX = /usr/local
-CXXFLAGS ?= -Wall -Wextra -O0 -g `dnet-config --cflags` -std=c++11
-LIBS = -lpthread `dnet-config --libs` -lzmq -lircclient -lcrypto -lm -lbsd -lpcre -lyaml-cpp
+CXXFLAGS ?= -Wall -Wextra -O0 -g `dnet-config --cflags` -std=c++11 -I../libs/ -felide-constructors
+LIBS =  -lpthread `dnet-config --libs` -lzmq -lircclient -lcrypto -lm -lbsd -lpcre -llua5.2
 OBJS = ipoirc.o irc.o irc_events.o irc_helpers.o ltun.o tun.o tun_helpers.o b2t.o
 TARGET = ipoirc
 

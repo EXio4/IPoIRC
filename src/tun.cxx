@@ -12,19 +12,9 @@
 #include "tun.h"
 #include "tun_helpers.h"
 
-void tun_thread_zmq(void* zmq_context, const Tun& tun) {
-
+void TunModule::worker_reader(const Tun& tun, Comm::Socket socket) {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     if (!sbuffer) return;
-
-    void *socket = zmq_socket(zmq_context, ZMQ_PULL);
-    if (!socket) return;
-
-    if (zmq_bind(socket, "inproc://#irc_to_#tun")) {
-        tun_debug() << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
-        zmq_close(socket);
-        return;
-    }
 
     int nbytes = -1;
     while ((nbytes = zmq_recv(socket, sbuffer, MTU, 0)) >= 0) {
@@ -36,23 +26,10 @@ void tun_thread_zmq(void* zmq_context, const Tun& tun) {
         }
         tun.write(sbuffer, nbytes);
     }
-
-    zmq_close(socket);
-}
-
-void tun_thread_dt(void* zmq_context, const Tun& tun) {
-
+};
+void TunModule::worker_writer(const Tun& tun, Comm::Socket socket) {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     if (!sbuffer) return;
-
-    void *socket = zmq_socket(zmq_context, ZMQ_PUSH);
-    if (!socket) return;
-
-    if (zmq_bind(socket, "inproc://#tun_to_#irc")) {
-        tun_debug() << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
-        zmq_close(socket);
-        return;
-    }
 
     int nbytes = -1;
     while ((nbytes = tun.read(sbuffer, MTU)) != 0) {
@@ -65,19 +42,5 @@ void tun_thread_dt(void* zmq_context, const Tun& tun) {
             tun_debug() << "error reading data from tun: " << strerror(errno) << std::endl;
         }
     }
+};
 
-    zmq_close(socket);
-}
-
-
-void tun_thread(void* zmq_context, const Tun& tun) {
-
-    std::thread zmq_th([zmq_context,&tun]() {
-        return tun_thread_zmq(zmq_context, tun);
-    });
-
-    {
-        tun_thread_dt(zmq_context, tun);
-    }
-    zmq_th.join();
-}

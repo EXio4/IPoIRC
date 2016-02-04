@@ -4,31 +4,29 @@
 #include "ltun.h"
 #include "modules.h"
 
-void tun_thread(void* zmq_context, const Tun& tun);
-
 struct TunConfig {
+    std::string inet_name;
     std::string local;
     std::string remote;
 };
 
-class TunModule : LocalModule<TunConfig, const Tun, Unit, const Tun&> {
+class TunModule : public LocalModule<TunConfig, const Tun, Unit, const Tun&> {
     std::string module_name() noexcept { return "tun"; };
     HelpText help() noexcept { return
-                                {{"local_ip" ,"Local IP" }
+                                {{"inet_name","Interface name (should have placeholder '%d')"}
+                                ,{"local_ip" ,"Local IP" }
                                 ,{"remote_ip","Remote IP"}
                                 }; }; // any suggestions?
-    boost::optional<TunConfig> config(YAML::Node cfg) noexcept {
-        if (cfg["localip"] && cfg["remoteip"]) {
-            return TunConfig
-                     {.local  = cfg["localip" ].as<std::string>()
-                     ,.remote = cfg["remoteip"].as<std::string>()};
-        } else {
-            return boost::none;
-        }
-    };
+    TunConfig config(sol::table cfg) {
+        return TunConfig
+                    {.inet_name = cfg.get<std::string>("inet_name")
+                    ,.local     = cfg.get<std::string>("local_ip" )
+                    ,.remote    = cfg.get<std::string>("remote_ip")};
+    }
 
-    const Tun priv_init(TunConfig);
-    Unit      norm_init(TunConfig) { return Unit {}; };
+
+    const Tun   priv_init(TunConfig cfg) { return Tun(cfg.inet_name, MTU, cfg.local, cfg.remote); };
+    Unit        norm_init(TunConfig    ) { return Unit {}; };
 
     const Tun& start_thread(const Tun& x, Unit&) { return x; }
 

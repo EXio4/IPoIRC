@@ -1,23 +1,21 @@
-# Network related settings
+config = {
+    ["uid"] = 1000,
+    ["gid"] = 1000,
 
-network = "irc.freenode.net"
-port    = 6667
-nick    = "ipoirc%d"
-channel = "##ipoirc-test"
+    ["tun"] = {
+        ["inet_name"] = "irc%d",
+        ["local_ip" ] = "192.168.64.1",
+        ["remote_ip"] = "192.168.64.2"
+    },
 
-# IRC<->IRC communication
+    ["irc"] = {
+        ["threads"]  = 2,
+        ["netid"]    = "dsk",
+        ["network"]  = "irc.freenode.net",
+        ["password"] = "",
+        ["port"]     = 6697,
+        ["nick"]     = "ipoirc%d",
+        ["channel"]  = "##ipoirc-test"
+    }
 
-netid = "desktop1234"
-
-# TUN setup
-
-localip  = "192.168.64.1"
-remoteip = "192.168.64.2"
-
-# Dropping privs
-
-gid = 1000
-uid = 1000
-
-# IRC threads
-threads = 2
+}
