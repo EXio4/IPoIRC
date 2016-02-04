@@ -22,11 +22,20 @@ std::ostream& debug() {
     return debug_gen("main");
 }
 
-void usage(char *h) {
-    printf( "%s parameters:\n"
-            "\t-c file\n"
-            "\t\tconfig file\n",
-            h);
+void usage(std::string self, CoreModule& local) {
+    std::cout << self << std::endl;
+    std::cout << "# General" << std::endl;
+    std::cout << "\t-c <file>" << std::endl;
+    std::cout << "\t\tconfig file" << std::endl;
+
+    std::cout << "# Config file fields" << std::endl;
+
+    std::cout << "* " << local.module_name() << " settings" << std::endl;
+    for (auto& v : local.help()) {
+        std::cout << "\t"   << v[0] << std::endl;
+        std::cout << "\t\t" << v[1] << std::endl;
+    }
+
     exit(1);
 }
 
@@ -121,20 +130,16 @@ int main(int argc, char **argv) {
 
     std::string config;
 
-    {
-        int c;
+    TunModule TUN;
+
+    {   char c;
         while ((c = getopt (argc, argv, "c:")) != -1) {
-            switch (c) {
-                case 'c': config = optarg;
-                    break;
-                default:
-                    usage(argv[0]);
-            }
+            if (c == 'c') config = optarg;
         }
     }
 
     if (config == "") {
-        usage(argv[0]);
+        usage(argv[0], TUN);
         return 0;
     }
 
@@ -142,12 +147,12 @@ int main(int argc, char **argv) {
         sol::state lua;
         lua.open_file(config);
         sol::table cfg = lua.get<sol::table>("config");
-        TunModule local;
-        program(cfg, local);
+        program(cfg, TUN);
     } catch(TunError const &e) {
         debug() << "error setting up tun, are you root?" << std::endl;
     } catch(sol::error const &e) {
         debug() << e.what() << std::endl;
+        usage(argv[0], TUN);
     };
 
     return 0;
