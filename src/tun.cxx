@@ -12,7 +12,7 @@
 #include "tun.h"
 #include "tun_helpers.h"
 
-void TunModule::worker_reader(const Tun& tun, Comm::Socket socket) {
+void TunModule::worker_reader(Tun& tun, Comm::Socket socket) {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     if (!sbuffer) return;
 
@@ -27,7 +27,7 @@ void TunModule::worker_reader(const Tun& tun, Comm::Socket socket) {
         tun.write(sbuffer, nbytes);
     }
 };
-void TunModule::worker_writer(const Tun& tun, Comm::Socket socket) {
+void TunModule::worker_writer(Tun& tun, Comm::Socket socket) {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     if (!sbuffer) return;
 

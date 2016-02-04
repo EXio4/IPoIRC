@@ -2,6 +2,7 @@
 #define IPOIRC_TUN_H
 
 #include "ltun.h"
+#include "config.h"
 #include "modules.h"
 
 struct TunConfig {
@@ -10,7 +11,7 @@ struct TunConfig {
     std::string remote;
 };
 
-class TunModule : public LocalModule<TunConfig, const Tun, Unit, const Tun&> {
+class TunModule : public LocalModule<TunConfig, Tun, Unit, Tun&> {
     std::string module_name() noexcept { return "tun"; };
     HelpText help() noexcept { return
                                 {{"inet_name","Interface name (should have placeholder '%d')"}
@@ -25,13 +26,13 @@ class TunModule : public LocalModule<TunConfig, const Tun, Unit, const Tun&> {
     }
 
 
-    const Tun   priv_init(TunConfig cfg) { return Tun(cfg.inet_name, MTU, cfg.local, cfg.remote); };
-    Unit        norm_init(TunConfig    ) { return Unit {}; };
+    Tun   priv_init(TunConfig cfg) { return Tun(cfg.inet_name, MTU, cfg.local, cfg.remote); };
+    Unit  norm_init(TunConfig    ) { return Unit {}; };
 
-    const Tun& start_thread(const Tun& x, Unit&) { return x; }
+    Tun& start_thread(Tun& x, Unit&) { return x; }
 
-    void worker_reader(const Tun& tun, Comm::Socket s);
-    void worker_writer(const Tun& tun, Comm::Socket s);
+    void worker_reader(Tun& tun, Comm::Socket s);
+    void worker_writer(Tun& tun, Comm::Socket s);
 /* */
 };
 
