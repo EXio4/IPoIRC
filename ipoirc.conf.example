@@ -8,12 +8,16 @@ config = {
         ["remote_ip"] = "192.168.64.2"
     },
 
+    ["net"] = {
+        ["port"] = 1337
+    },
+
     ["irc"] = {
         ["threads"]  = 2,
         ["netid"]    = "dsk",
         ["network"]  = "irc.freenode.net",
         ["password"] = "",
-        ["port"]     = 6697,
+        ["port"]     = 6667,
         ["nick"]     = "ipoirc%d",
         ["channel"]  = "##ipoirc-test"
     }

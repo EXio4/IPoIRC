@@ -10,9 +10,10 @@
 #include <sol/sol.hpp>
 #include <zmq.h>
 
-#include "tun_helpers.h"
+#include "local_helpers.h"
 #include "irc.h"
 #include "tun.h"
+#include "net.h"
 #include "config.h"
 #include "ltun.h"
 #include "ipoirc.h"
@@ -22,7 +23,7 @@ std::ostream& debug() {
     return debug_gen("main");
 }
 
-void usage(std::string self, CoreModule& local) {
+void usage(std::string self, const std::vector<CoreModule*> &mods) {
     std::cout << self << std::endl;
     std::cout << "# General" << std::endl;
     std::cout << "\t-c <file>" << std::endl;
@@ -30,10 +31,12 @@ void usage(std::string self, CoreModule& local) {
 
     std::cout << "# Config file fields" << std::endl;
 
-    std::cout << "* " << local.module_name() << " settings" << std::endl;
-    for (auto& v : local.help()) {
-        std::cout << "\t"   << v[0] << std::endl;
-        std::cout << "\t\t" << v[1] << std::endl;
+    for (auto local : mods) {
+        std::cout << "* " << local->module_name() << " settings" << std::endl;
+        for (auto& v : local->help()) {
+            std::cout << "\t"   << v[0] << std::endl;
+            std::cout << "\t\t" << v[1] << std::endl;
+        }
     }
 
     exit(1);
@@ -73,7 +76,7 @@ void program(sol::table& cfg, LocalModule<LocalCFG, LocalC1, LocalC2, LocalT>& l
             if (!socket) return;
 
             if (zmq_bind(socket, "inproc://#irc_to_#tun")) {
-                tun_debug() << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
+                loc_debug() << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
                 zmq_close(socket);
                 return;
             }
@@ -86,7 +89,7 @@ void program(sol::table& cfg, LocalModule<LocalCFG, LocalC1, LocalC2, LocalT>& l
             if (!socket) return;
 
             if (zmq_bind(socket, "inproc://#tun_to_#irc")) {
-                tun_debug() << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
+                loc_debug() << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
                 zmq_close(socket);
                 return;
             }
@@ -131,6 +134,11 @@ int main(int argc, char **argv) {
     std::string config;
 
     TunModule TUN;
+    NetModule NET;
+
+    std::vector<CoreModule*> modules { &TUN
+                                     , &NET
+                                     };
 
     {   char c;
         while ((c = getopt (argc, argv, "c:")) != -1) {
@@ -139,7 +147,7 @@ int main(int argc, char **argv) {
     }
 
     if (config == "") {
-        usage(argv[0], TUN);
+        usage(argv[0], modules);
         return 0;
     }
 
@@ -147,12 +155,13 @@ int main(int argc, char **argv) {
         sol::state lua;
         lua.open_file(config);
         sol::table cfg = lua.get<sol::table>("config");
+        // how could we pick the "local" module at runtime without a kick-ass?
         program(cfg, TUN);
     } catch(TunError const &e) {
         debug() << "error setting up tun, are you root?" << std::endl;
     } catch(sol::error const &e) {
         debug() << e.what() << std::endl;
-        usage(argv[0], TUN);
+        usage(argv[0], modules);
     };
 
     return 0;
