@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
         sol::state lua;
         lua.open_file(config);
         sol::table cfg = lua.get<sol::table>("config");
-        // how could we pick the "local" module at runtime without a kick-ass?
+        // how could we pick the "local" module at runtime without a kick-ass if/switch?
         program(cfg, TUN);
     } catch(TunError const &e) {
         debug() << "error setting up tun, are you root?" << std::endl;
