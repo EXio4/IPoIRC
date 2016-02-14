@@ -1,4 +1,5 @@
 #ifndef IPOIRC_LOCAL_HELPERS_H
 #define IPOIRC_LOCAL_HELPERS_H
-std::ostream& loc_debug();
+#include "log.h"
+std::ostream& loc_log(Log::Level l);
 #endif

@@ -10,6 +10,7 @@
 #include <sol/sol.hpp>
 #include <zmq.h>
 
+#include "log.h"
 #include "local_helpers.h"
 #include "irc.h"
 #include "tun.h"
@@ -19,8 +20,8 @@
 #include "ipoirc.h"
 
 
-std::ostream& debug() {
-    return debug_gen("main");
+std::ostream& log(Log::Level l) {
+    return Log::gen("main", l);
 }
 
 void usage(std::string self, const std::vector<CoreModule*> &mods) {
@@ -48,18 +49,18 @@ void program(sol::table& cfg, LocalModule<LocalCFG, LocalC1, LocalC2, LocalT>& l
 
     void *zmq_context = zmq_ctx_new();
 
-    debug() << "Loading general settings" << std::endl;
+    log(Log::Info) << "Loading general settings" << std::endl;
     int uid = cfg.get<int>("uid");
     int gid = cfg.get<int>("gid");
 
-    debug() << "Loading " << local.module_name() << " config" << std::endl;
+    log(Log::Info) << "Loading " << local.module_name() << " config" << std::endl;
     LocalCFG local_cfg = local.config(cfg.get<sol::table>(local.module_name()));
 
     LocalC1 l_c1 = local.priv_init(local_cfg);
 
     if (getuid() == 0 && gid != 0 && uid != 0) {
         if (setgid(gid) != 0 || setuid(uid) != 0) {
-            debug() << "unable to drop privileges: " << strerror(errno) << std::endl;
+            log(Log::Fatal) << "unable to drop privileges: " << strerror(errno) << std::endl;
             exit(1);
         }
     }
@@ -68,7 +69,7 @@ void program(sol::table& cfg, LocalModule<LocalCFG, LocalC1, LocalC2, LocalT>& l
 
     LocalT loc = local.start_thread(l_c1, l_c2);
 
-    debug() << "running as " << getuid() << std::endl;
+    log(Log::Info) << "running as " << getuid() << std::endl;
 
     std::thread tun_th([zmq_context,&local,&loc]() {
         std::thread zmq_th([zmq_context,&local,&loc]() {
@@ -76,7 +77,7 @@ void program(sol::table& cfg, LocalModule<LocalCFG, LocalC1, LocalC2, LocalT>& l
             if (!socket) return;
 
             if (zmq_bind(socket, "inproc://#irc_to_#tun")) {
-                loc_debug() << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
+                loc_log(Log::Fatal) << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
                 zmq_close(socket);
                 return;
             }
@@ -89,7 +90,7 @@ void program(sol::table& cfg, LocalModule<LocalCFG, LocalC1, LocalC2, LocalT>& l
             if (!socket) return;
 
             if (zmq_bind(socket, "inproc://#tun_to_#irc")) {
-                loc_debug() << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
+                loc_log(Log::Fatal) << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
                 zmq_close(socket);
                 return;
             }
@@ -102,7 +103,7 @@ void program(sol::table& cfg, LocalModule<LocalCFG, LocalC1, LocalC2, LocalT>& l
     sleep(1);
 
 
-    debug() << "Loading IRC Config" << std::endl;
+    log(Log::Info) << "Loading IRC Config" << std::endl;
     sol::table c = cfg.get<sol::table>("irc");
     int threads = c.get<int>("threads");
     for (int i=0; i < threads; i++) {
@@ -158,9 +159,9 @@ int main(int argc, char **argv) {
         // how could we pick the "local" module at runtime without a kick-ass if/switch?
         program(cfg, TUN);
     } catch(TunError const &e) {
-        debug() << "error setting up tun, are you root?" << std::endl;
+        log(Log::Fatal) << "error setting up tun, are you root?" << std::endl;
     } catch(sol::error const &e) {
-        debug() << e.what() << std::endl;
+        log(Log::Fatal) << e.what() << std::endl;
         usage(argv[0], modules);
     };
 

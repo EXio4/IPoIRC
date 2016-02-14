@@ -1,6 +1,6 @@
-#include "ipoirc.h"
+#include "log.h"
 #include "local_helpers.h"
 
-std::ostream& loc_debug() {
-    return debug_gen("local");
+std::ostream& loc_log(Log::Level l) {
+    return Log::gen("local", l);
 }

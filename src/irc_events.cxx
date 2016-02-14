@@ -7,7 +7,6 @@
 #include "b2t.h"
 #include "ipoirc.h"
 #include "irc.h"
-#include "irc_helpers.h"
 
 void event_connect(irc_session_t *session, const char *event, const char *origin, const char **params, unsigned int count) {
     irc_ctx_t *ctx = (irc_ctx_t*)irc_get_ctx(session);
@@ -15,7 +14,7 @@ void event_connect(irc_session_t *session, const char *event, const char *origin
     // shutup compiler complaining about unused variables
     (void) event; (void) origin; (void) params; (void) count;
 
-    irc_debug(ctx->self) << "(" << ctx->nick << ") connected to irc" << std::endl;
+    ctx->self.log(Log::Info) << "(" << ctx->nick << ") connected to irc" << std::endl;
     irc_cmd_join(session, ctx->channel.c_str(), 0);
 }
 
@@ -62,7 +61,7 @@ void event_message(irc_session_t *session, const char *event, const char *origin
         }
         if (netid == ctx->self.netid) return;
 
-        std::string &buf = ctx->dt[nick];
+        std::string& buf = ctx->dt[nick];
 
         buf += data;
 
@@ -70,9 +69,9 @@ void event_message(irc_session_t *session, const char *event, const char *origin
             char *st = NULL;
             int len = B2T::decode(buf , st);
             if (len < 1) {
-                irc_debug(ctx->self) << "error when decoding base64 buffer (" << len << ")" << std::endl;
+                ctx->self.log(Log::Error) << "error when decoding base64 buffer (" << len << ")" << std::endl;
             } else if (zmq_send(ctx->data, st, len, 0) < 0) {
-                    irc_debug(ctx->self) << "error trying to send a message to the tun (warning, this WILL result in missing packets!): " << zmq_strerror(errno) << std::endl;
+                    ctx->self.log(Log::Error) << "error trying to send a message to the tun (warning, this WILL result in missing packets!): " << zmq_strerror(errno) << std::endl;
             }
             buf = "";
         };

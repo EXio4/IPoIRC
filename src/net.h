@@ -23,7 +23,7 @@ class NetModule : public LocalModule<NetConfig, Net, Unit, Net> {
     }
 
 
-    Net  priv_init(NetConfig cfg);
+    Net   priv_init(NetConfig cfg);
     Unit  norm_init(NetConfig    ) { return Unit {}; };
 
     Net start_thread(Net& x, Unit&) { return x; }

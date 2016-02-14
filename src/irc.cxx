@@ -12,7 +12,6 @@
 #include "irc.h"
 #include "irc_events.h"
 #include "ipoirc.h"
-#include "irc_helpers.h"
 #include "b2t.h"
 
 std::vector<std::string> split(const std::string& str, int splitLength) {
@@ -43,7 +42,7 @@ void irc_thread_zmq(irc_closure& self) {
     socket = zmq_socket(self.context, ZMQ_PULL); // client of the tun_socket
 
     if (zmq_connect(socket, "inproc://#tun_to_#irc")) {
-        irc_debug(self) << "(irc_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
+        self.log(Log::Fatal) << "(irc_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
         goto exit;
     }
 
@@ -52,12 +51,12 @@ void irc_thread_zmq(irc_closure& self) {
         int nbytes = zmq_recv(socket, sbuffer, MTU, 0);
 
         if (nbytes < 0) {
-            irc_debug(self) << "error when reading from zeromq socket" << std::endl;
-            goto exit; // a cute break here!
+            self.log(Log::Warning) << "error when reading from zeromq socket" << std::endl;
+            continue;
         } else if (nbytes == 0) {
             continue;
         } else if (nbytes > MTU) {
-            irc_debug(self) << "warning: some message got truncated by " << nbytes-MTU << "(" << nbytes << " - " << MTU << "), this means the MTU is too low for you!" << std::endl;
+            self.log(Log::Warning) << "warning: some message got truncated by " << nbytes-MTU << "(" << nbytes << " - " << MTU << "), this means the MTU is too low for you!" << std::endl;
             nbytes = MTU;
         }
 
@@ -91,7 +90,7 @@ void irc_thread_net(irc_closure& self) {
     void *socket = zmq_socket(self.context, ZMQ_PUSH); // "server" from irc -> tun
 
     if (zmq_connect(socket, "inproc://#irc_to_#tun")) {
-        irc_debug(self) << "(irc_thread_net) error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
+        self.log(Log::Fatal) << "(irc_thread_net) error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
         goto exit;
     }
 
@@ -109,16 +108,16 @@ void irc_thread_net(irc_closure& self) {
 
     self.irc_s = irc_create_session(&callbacks);
     if (!self.irc_s) {
-        irc_debug(self) << "error when creating irc_session" << std::endl;
+        self.log(Log::Fatal) << "error when creating irc_session" << std::endl;
         goto exit;
     }
 
     irc_set_ctx(self.irc_s, &ctx);
 
-    irc_debug(self) << "created irc_session, connecting to " << self.server << ":6667 as " << ctx.nick << "!" << std::endl;
+    self.log(Log::Info) << "created irc_session, connecting to " << self.server << ":6667 as " << ctx.nick << "!" << std::endl;
 
     if (irc_connect (self.irc_s, self.server.c_str(), self.port, self.pass.c_str(), ctx.nick.c_str(), "ipoirc", "IP over IRC - http://github.com/EXio4/IPoIRC")) {
-        irc_debug(self) << "error when connecting to irc (" << irc_strerror(irc_errno(self.irc_s)) << ")" << std::endl;
+        self.log(Log::Fatal) << "error when connecting to irc (" << irc_strerror(irc_errno(self.irc_s)) << ")" << std::endl;
         goto exit;
     }
 
@@ -141,7 +140,7 @@ void irc_thread(irc_closure self) {
         self.regex = REGEX;
         self.regex_final = REGEX_FINAL;
     } catch (std::regex_error const &e) {
-        irc_debug(self) << "error loading regex(es)" << std::endl;
+        self.log(Log::Fatal) << "error loading regex(es)" << std::endl;
         return;
     }
 
@@ -151,7 +150,7 @@ void irc_thread(irc_closure self) {
 
     while (1) {
         irc_thread_net(self);
-        irc_debug(self) << "irc thread died, reconnecting in 2s.." << std::endl;
+        self.log(Log::Warning) << "irc thread died, reconnecting in 2s.." << std::endl;
         sleep(2);
     }
 
