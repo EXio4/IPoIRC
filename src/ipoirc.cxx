@@ -11,7 +11,6 @@
 #include <zmq.h>
 
 #include "log.h"
-#include "local_helpers.h"
 #include "irc.h"
 #include "tun.h"
 #include "net.h"
@@ -77,7 +76,7 @@ void program(sol::table& cfg, LocalModule<Local>& local) {
             if (!socket) return;
 
             if (zmq_bind(socket, "inproc://#irc_to_#tun")) {
-                loc_log(Log::Fatal) << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
+                local.log(Log::Fatal) << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
                 zmq_close(socket);
                 return;
             }
@@ -90,7 +89,7 @@ void program(sol::table& cfg, LocalModule<Local>& local) {
             if (!socket) return;
 
             if (zmq_bind(socket, "inproc://#tun_to_#irc")) {
-                loc_log(Log::Fatal) << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
+                local.log(Log::Fatal) << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
                 zmq_close(socket);
                 return;
             }
@@ -157,7 +156,7 @@ int main(int argc, char **argv) {
         lua.open_file(config);
         sol::table cfg = lua.get<sol::table>("config");
         // how could we pick the "local" module at runtime without a kick-ass if/switch?
-        program(cfg, TUN);
+        program(cfg, NET);
     } catch(TunError const &e) {
         log(Log::Fatal) << "error setting up tun, are you root?" << std::endl;
     } catch(sol::error const &e) {

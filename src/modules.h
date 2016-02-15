@@ -2,6 +2,7 @@
 #define IPOIRC_MODULES_H
 #include <boost/optional.hpp>
 #include <sol/sol.hpp>
+#include "log.h"
 #include "comm.h"
 
 using HelpText = std::vector<std::vector<std::string>>; // we gotta now a better way to do this
@@ -16,8 +17,15 @@ public:
     virtual HelpText help() noexcept = 0;
 };
 
+class LogModule : public virtual CoreModule {
+public:
+    virtual std::ostream& log(Log::Level l) {
+        return Log::gen(module_name(), l);     // default implementation should be good enough most of them time?
+    }
+};
+
 template <typename T>
-class LocalModule : public CoreModule {
+class LocalModule : public virtual CoreModule, public LogModule {
 public:
     using Config = typename T::Config;
     using Priv   = typename T::Priv  ;
@@ -32,6 +40,7 @@ public:
     virtual void worker_reader(State, Comm::Socket) = 0;
     virtual void worker_writer(State, Comm::Socket) = 0;
 };
+
 
 struct Unit {};
 
