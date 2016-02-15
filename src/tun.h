@@ -11,7 +11,14 @@ struct TunConfig {
     std::string remote;
 };
 
-class TunModule : public LocalModule<TunConfig, Tun, Unit, Tun&> {
+struct TunModuleT {
+    using Config = TunConfig;
+    using Priv   = Tun;
+    using Norm   = Unit;
+    using State  = Tun&;
+};
+
+class TunModule : public LocalModule<TunModuleT> {
     std::string module_name() noexcept { return "tun"; };
     HelpText help() noexcept { return
                                 {{"inet_name","Interface name (should have placeholder '%d')"}

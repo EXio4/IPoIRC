@@ -16,17 +16,21 @@ public:
     virtual HelpText help() noexcept = 0;
 };
 
-template <typename CFG, typename C1, typename C2, typename T>
+template <typename T>
 class LocalModule : public CoreModule {
 public:
-    virtual CFG config(sol::table) = 0;
+    using Config = typename T::Config;
+    using Priv   = typename T::Priv  ;
+    using Norm   = typename T::Norm  ;
+    using State  = typename T::State ;
+    virtual Config config(sol::table) = 0;
 
-    virtual C1 priv_init(CFG) = 0;
-    virtual C2 norm_init(CFG) = 0;
+    virtual Priv priv_init(Config) = 0;
+    virtual Norm norm_init(Config) = 0;
 
-    virtual T start_thread(C1&, C2&) = 0;
-    virtual void worker_reader(T, Comm::Socket) = 0;
-    virtual void worker_writer(T, Comm::Socket) = 0;
+    virtual State start_thread(Priv&, Norm&) = 0;
+    virtual void worker_reader(State, Comm::Socket) = 0;
+    virtual void worker_writer(State, Comm::Socket) = 0;
 };
 
 struct Unit {};

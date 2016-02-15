@@ -44,8 +44,8 @@ void usage(std::string self, const std::vector<CoreModule*> &mods) {
 }
 
 
-template <typename LocalCFG, typename LocalC1, typename LocalC2, typename LocalT>
-void program(sol::table& cfg, LocalModule<LocalCFG, LocalC1, LocalC2, LocalT>& local) {
+template <typename Local>
+void program(sol::table& cfg, LocalModule<Local>& local) {
 
     void *zmq_context = zmq_ctx_new();
 
@@ -54,9 +54,9 @@ void program(sol::table& cfg, LocalModule<LocalCFG, LocalC1, LocalC2, LocalT>& l
     int gid = cfg.get<int>("gid");
 
     log(Log::Info) << "Loading " << local.module_name() << " config" << std::endl;
-    LocalCFG local_cfg = local.config(cfg.get<sol::table>(local.module_name()));
+    typename Local::Config local_cfg = local.config(cfg.get<sol::table>(local.module_name()));
 
-    LocalC1 l_c1 = local.priv_init(local_cfg);
+    typename Local::Priv l_c1 = local.priv_init(local_cfg);
 
     if (getuid() == 0 && gid != 0 && uid != 0) {
         if (setgid(gid) != 0 || setuid(uid) != 0) {
@@ -65,9 +65,9 @@ void program(sol::table& cfg, LocalModule<LocalCFG, LocalC1, LocalC2, LocalT>& l
         }
     }
 
-    LocalC2 l_c2 = local.norm_init(local_cfg);
+    typename Local::Norm l_c2 = local.norm_init(local_cfg);
 
-    LocalT loc = local.start_thread(l_c1, l_c2);
+    typename Local::State loc = local.start_thread(l_c1, l_c2);
 
     log(Log::Info) << "running as " << getuid() << std::endl;
 

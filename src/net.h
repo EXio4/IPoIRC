@@ -13,7 +13,15 @@ struct Net {
     int c_fd;
 };
 
-class NetModule : public LocalModule<NetConfig, Net, Unit, Net> {
+struct NetModuleT {
+    using Config = NetConfig;
+    using Priv   = Net;
+    using Norm   = Unit;
+    using State  = Net;
+};
+
+
+class NetModule : public LocalModule<NetModuleT> {
     std::string module_name() noexcept { return "net"; };
     HelpText help() noexcept { return
                                 {{"port", "Local port (to listen to)"}
