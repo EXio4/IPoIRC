@@ -41,7 +41,6 @@ public:
     virtual void worker_writer(State, Comm::Socket) = 0;
 };
 
-
 struct Unit {};
 
 #endif

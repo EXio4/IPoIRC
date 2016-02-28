@@ -17,6 +17,7 @@
 #include "config.h"
 #include "ltun.h"
 #include "ipoirc.h"
+#include "modexists.h"
 
 
 std::ostream& log(Log::Level l) {
@@ -43,8 +44,7 @@ void usage(std::string self, const std::vector<CoreModule*> &mods) {
 }
 
 
-template <typename Local>
-void program(sol::table& cfg, LocalModule<Local>& local) {
+void program(sol::table& cfg, EX::Local_Config* local_s1) {
 
     void *zmq_context = zmq_ctx_new();
 
@@ -52,10 +52,10 @@ void program(sol::table& cfg, LocalModule<Local>& local) {
     int uid = cfg.get<int>("uid");
     int gid = cfg.get<int>("gid");
 
-    log(Log::Info) << "Loading " << local.module_name() << " config" << std::endl;
-    typename Local::Config local_cfg = local.config(cfg.get<sol::table>(local.module_name()));
+    log(Log::Info) << "Loading " << local_s1->module_name() << " config" << std::endl;
+    auto local_s2 = local_s1->config(cfg.get<sol::table>(local_s1->module_name()));
 
-    typename Local::Priv l_c1 = local.priv_init(local_cfg);
+    auto local_s3 = local_s2->priv_init();
 
     if (getuid() == 0 && gid != 0 && uid != 0) {
         if (setgid(gid) != 0 || setuid(uid) != 0) {
@@ -64,23 +64,23 @@ void program(sol::table& cfg, LocalModule<Local>& local) {
         }
     }
 
-    typename Local::Norm l_c2 = local.norm_init(local_cfg);
+    auto local_s4 = local_s3->norm_init();
 
-    typename Local::State loc = local.start_thread(l_c1, l_c2);
+    auto local_s5 = local_s4->start_th();
 
     log(Log::Info) << "running as " << getuid() << std::endl;
 
-    std::thread tun_th([zmq_context,&local,&loc]() {
-        std::thread zmq_th([zmq_context,&local,&loc]() {
+    std::thread tun_th([zmq_context,&local_s5]() {
+        std::thread zmq_th([zmq_context,&local_s5]() {
             void *socket = zmq_socket(zmq_context, ZMQ_PULL);
             if (!socket) return;
 
             if (zmq_bind(socket, "inproc://#irc_to_#tun")) {
-                local.log(Log::Fatal) << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
+                local_s5->log(Log::Fatal) << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
                 zmq_close(socket);
                 return;
             }
-            local.worker_reader(loc, socket);
+            local_s5->worker_reader(socket);
             zmq_close(socket);
         });
 
@@ -89,11 +89,11 @@ void program(sol::table& cfg, LocalModule<Local>& local) {
             if (!socket) return;
 
             if (zmq_bind(socket, "inproc://#tun_to_#irc")) {
-                local.log(Log::Fatal) << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
+                local_s5->log(Log::Fatal) << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
                 zmq_close(socket);
                 return;
             }
-            local.worker_writer(loc, socket);
+            local_s5->worker_writer(socket);
             zmq_close(socket);
         }
         zmq_th.join();
@@ -156,7 +156,8 @@ int main(int argc, char **argv) {
         lua.open_file(config);
         sol::table cfg = lua.get<sol::table>("config");
         // how could we pick the "local" module at runtime without a kick-ass if/switch?
-        program(cfg, NET);
+        EX::Local_Config *m = EX::local_module(&NET);
+        program(cfg, m);
     } catch(TunError const &e) {
         log(Log::Fatal) << "error setting up tun, are you root?" << std::endl;
     } catch(sol::error const &e) {
