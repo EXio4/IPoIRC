@@ -7,6 +7,7 @@
  * in modules.h
  */
 #include "modules.h"
+#include <memory>
 
 namespace EX {
 
@@ -19,22 +20,22 @@ namespace EX {
 
     class Local_Config : public virtual CoreModule, public LogModule {
     public:
-        virtual Local_PrivInit* config(sol::table) = 0;
+        virtual std::shared_ptr<Local_PrivInit> config(sol::table) = 0;
     };
 
     class Local_PrivInit : public virtual CoreModule, public LogModule {
     public:
-        virtual Local_NormInit* priv_init() = 0;
+        virtual std::shared_ptr<Local_NormInit> priv_init() = 0;
     };
 
     class Local_NormInit : public virtual CoreModule, public LogModule {
     public:
-        virtual Local_Start* norm_init() = 0;
+        virtual std::shared_ptr<Local_Start> norm_init() = 0;
     };
 
     class Local_Start : public virtual CoreModule, public LogModule {
     public:
-        virtual Local_Done* start_th() = 0;
+        virtual std::shared_ptr<Local_Done> start_th() = 0;
     };
 
     class Local_Done : public virtual CoreModule, public LogModule {
@@ -77,8 +78,8 @@ namespace EX {
         typename T::Norm n;
     public:
         Local_Start_Impl(LocalModule<T>* _l, typename T::Priv _p, typename T::Norm _n) : l(_l), p(_p), n(_n) {};
-        Local_Done* start_th() {
-            return new Local_Done_Impl<T>(l, l->start_thread(p, n));
+        std::shared_ptr<Local_Done> start_th() {
+            return std::shared_ptr<Local_Done>(new Local_Done_Impl<T>(l, l->start_thread(p, n)));
         }
 
         /* BOILERPLATE */
@@ -101,8 +102,8 @@ namespace EX {
         typename T::Priv   p;
     public:
         Local_NormInit_Impl(LocalModule<T>* _l, typename T::Config _c, typename T::Priv _p) : l(_l), c(_c), p(_p) {};
-        Local_Start* norm_init() {
-            return new Local_Start_Impl<T>(l, p, l->norm_init(c));
+        std::shared_ptr<Local_Start> norm_init() {
+            return std::shared_ptr<Local_Start>(new Local_Start_Impl<T>(l, p, l->norm_init(c)));
         }
 
         /* BOILERPLATE */
@@ -124,8 +125,8 @@ namespace EX {
         typename T::Config c;
     public:
         Local_PrivInit_Impl(LocalModule<T>* _l, typename T::Config _c) : l(_l), c(_c) {};
-        Local_NormInit* priv_init() {
-            return new Local_NormInit_Impl<T>(l, c, l->priv_init(c));
+        std::shared_ptr<Local_NormInit> priv_init() {
+            return std::shared_ptr<Local_NormInit>(new Local_NormInit_Impl<T>(l, c, l->priv_init(c)));
         }
 
         /* BOILERPLATE */
@@ -147,8 +148,8 @@ namespace EX {
         LocalModule<T> *l;
     public:
         Local_Config_Impl(LocalModule<T>* _l) : l(_l) {};
-        Local_PrivInit* config(sol::table e) {
-            return new Local_PrivInit_Impl<T>(l, l->config(e));
+        std::shared_ptr<Local_PrivInit> config(sol::table e) {
+            return std::shared_ptr<Local_PrivInit>(new Local_PrivInit_Impl<T>(l, l->config(e)));
         }
 
         /* BOILERPLATE */
@@ -165,8 +166,8 @@ namespace EX {
     };
 
     template <typename T>
-    Local_Config* local_module(LocalModule<T>* l) {
-        return new Local_Config_Impl<T>(l);
+    std::shared_ptr<Local_Config> local_module(LocalModule<T>* l) {
+        return std::shared_ptr<Local_Config>(new Local_Config_Impl<T>(l));
     }
 
 }

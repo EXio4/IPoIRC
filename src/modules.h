@@ -36,7 +36,7 @@ public:
     virtual Priv priv_init(Config) = 0;
     virtual Norm norm_init(Config) = 0;
 
-    virtual State start_thread(Priv&, Norm&) = 0;
+    virtual State start_thread(Priv, Norm) = 0;
     virtual void worker_reader(State, Comm::Socket) = 0;
     virtual void worker_writer(State, Comm::Socket) = 0;
 };

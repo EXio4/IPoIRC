@@ -2,6 +2,8 @@ config = {
     ["uid"] = 1000,
     ["gid"] = 1000,
 
+    ["local_module"] = "net",
+
     ["tun"] = {
         ["inet_name"] = "irc%d",
         ["local_ip" ] = "192.168.64.1",

@@ -24,13 +24,20 @@ std::ostream& log(Log::Level l) {
     return Log::gen("main", l);
 }
 
-void usage(std::string self, const std::vector<CoreModule*> &mods) {
+template <typename T>
+void usage(std::string self, const std::vector<std::shared_ptr<T>> &mods) {
     std::cout << self << std::endl;
     std::cout << "# General" << std::endl;
     std::cout << "\t-c <file>" << std::endl;
     std::cout << "\t\tconfig file" << std::endl;
 
     std::cout << "# Config file fields" << std::endl;
+
+    /* missing:
+     *  gid
+     *  uid
+     *  local_module
+     */
 
     for (auto local : mods) {
         std::cout << "* " << local->module_name() << " settings" << std::endl;
@@ -44,7 +51,7 @@ void usage(std::string self, const std::vector<CoreModule*> &mods) {
 }
 
 
-void program(sol::table& cfg, EX::Local_Config* local_s1) {
+void program(sol::table& cfg, std::shared_ptr<EX::Local_Config> local_s1) {
 
     void *zmq_context = zmq_ctx_new();
 
@@ -136,10 +143,8 @@ int main(int argc, char **argv) {
     TunModule TUN;
     NetModule NET;
 
-    std::vector<CoreModule*> modules { &TUN
-                                     , &NET
-                                     };
-
+    std::vector<std::shared_ptr<EX::Local_Config>> l_modules { EX::local_module(&NET)
+                                                             , EX::local_module(&TUN) };
     {   char c;
         while ((c = getopt (argc, argv, "c:")) != -1) {
             if (c == 'c') config = optarg;
@@ -147,7 +152,7 @@ int main(int argc, char **argv) {
     }
 
     if (config == "") {
-        usage(argv[0], modules);
+        usage(argv[0], l_modules);
         return 0;
     }
 
@@ -155,14 +160,26 @@ int main(int argc, char **argv) {
         sol::state lua;
         lua.open_file(config);
         sol::table cfg = lua.get<sol::table>("config");
-        // how could we pick the "local" module at runtime without a kick-ass if/switch?
-        EX::Local_Config *m = EX::local_module(&NET);
-        program(cfg, m);
+
+        std::shared_ptr<EX::Local_Config> local = nullptr;
+        std::string local_module = cfg.get<std::string>("local_module");
+        for (auto& l_m : l_modules)  {
+            if (l_m->module_name() == local_module) {
+                log(Log::Info) << "Using " << local_module << std::endl;
+                local = l_m;
+                break;
+            }
+        }
+        if (local == nullptr) {
+            log(Log::Warning) << "No module matched, using fallback " << l_modules[0]->module_name() << " module" << std::endl;
+            local = l_modules[0];
+        }
+        program(cfg, local);
     } catch(TunError const &e) {
         log(Log::Fatal) << "error setting up tun, are you root?" << std::endl;
     } catch(sol::error const &e) {
         log(Log::Fatal) << e.what() << std::endl;
-        usage(argv[0], modules);
+        usage(argv[0], l_modules);
     };
 
     return 0;

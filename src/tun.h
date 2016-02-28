@@ -13,9 +13,9 @@ struct TunConfig {
 
 struct TunModuleT {
     using Config = TunConfig;
-    using Priv   = Tun;
+    using Priv   = std::shared_ptr<Tun>;
     using Norm   = Unit;
-    using State  = Tun&;
+    using State  = std::shared_ptr<Tun>;
 };
 
 class TunModule : public LocalModule<TunModuleT> {
@@ -33,13 +33,13 @@ class TunModule : public LocalModule<TunModuleT> {
     }
 
 
-    Tun   priv_init(TunConfig cfg) { return Tun(cfg.inet_name, MTU, cfg.local, cfg.remote); };
-    Unit  norm_init(TunConfig    ) { return Unit {}; };
+    std::shared_ptr<Tun> priv_init(TunConfig cfg) { return std::shared_ptr<Tun>(new Tun(cfg.inet_name, MTU, cfg.local, cfg.remote)); };
+    Unit                 norm_init(TunConfig    ) { return Unit {}; };
 
-    Tun& start_thread(Tun& x, Unit&) { return x; }
+    std::shared_ptr<Tun> start_thread(std::shared_ptr<Tun> x, Unit) { return x; }
 
-    void worker_reader(Tun& tun, Comm::Socket s);
-    void worker_writer(Tun& tun, Comm::Socket s);
+    void worker_reader(std::shared_ptr<Tun> tun, Comm::Socket s);
+    void worker_writer(std::shared_ptr<Tun> tun, Comm::Socket s);
 /* */
 };
 

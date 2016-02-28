@@ -34,7 +34,7 @@ class NetModule : public LocalModule<NetModuleT> {
     Net   priv_init(NetConfig cfg);
     Unit  norm_init(NetConfig    ) { return Unit {}; };
 
-    Net start_thread(Net& x, Unit&) { return x; };
+    Net start_thread(Net x, Unit) { return x; };
 
     void worker_reader(Net net, Comm::Socket s);
     void worker_writer(Net net, Comm::Socket s);
