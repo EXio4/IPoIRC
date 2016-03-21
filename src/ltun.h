@@ -32,7 +32,7 @@ public:
          other.intf = nullptr;
          return *this;
     };
-    
+
     int read(char *buf, uint16_t len) const;
     int write(const char *buf, uint16_t len) const;
 };
