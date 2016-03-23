@@ -13,7 +13,7 @@ namespace EX {
 
 
     template <typename T>
-    class Local_M : public virtual CoreModule, public LogModule {
+    class Local_M : public virtual CoreModule, public virtual LogModule {
     public:
         const LocalModule<T> *l;
         Local_M(const LocalModule<T> *_l) : l(_l) {};
@@ -35,27 +35,27 @@ namespace EX {
     class Local_Start;
     class Local_Done;
 
-    class Local_Config {
+    class Local_Config : public virtual CoreModule, public virtual LogModule {
     public:
         virtual std::shared_ptr<Local_PrivInit> config(sol::table) = 0;
     };
 
-    class Local_PrivInit  {
+    class Local_PrivInit : public virtual CoreModule, public virtual LogModule {
     public:
         virtual std::shared_ptr<Local_NormInit> priv_init() = 0;
     };
 
-    class Local_NormInit {
+    class Local_NormInit : public virtual CoreModule, public virtual LogModule {
     public:
         virtual std::shared_ptr<Local_Start> norm_init() = 0;
     };
 
-    class Local_Start {
+    class Local_Start : public virtual CoreModule, public virtual LogModule {
     public:
         virtual std::shared_ptr<Local_Done> start_th() = 0;
     };
 
-    class Local_Done {
+    class Local_Done : public virtual CoreModule, public virtual LogModule {
     public:
         virtual void worker_writer(Comm::Socket) = 0;
         virtual void worker_reader(Comm::Socket) = 0;
@@ -68,10 +68,10 @@ namespace EX {
     public:
         Local_Done_Impl(const LocalModule<T>* _l, const typename T::State _s) : Local_M<T>(_l) , s(_s) {};
         void worker_writer(Comm::Socket k) {
-            return l->worker_writer(s, k);
+            return Local_M<T>::l->worker_writer(s, k);
         }
         void worker_reader(Comm::Socket k) {
-            return l->worker_reader(s, k);
+            return Local_M<T>::l->worker_reader(s, k);
         }
     };
     template <typename T>
@@ -82,7 +82,7 @@ namespace EX {
     public:
         Local_Start_Impl(const LocalModule<T>* _l, const typename T::Priv _p, const typename T::Norm _n) : Local_M<T>(_l), p(_p), n(_n) {};
         std::shared_ptr<Local_Done> start_th() {
-            return std::shared_ptr<Local_Done>(new Local_Done_Impl<T>(l, l->start_thread(p, n)));
+            return std::shared_ptr<Local_Done>(new Local_Done_Impl<T>(Local_M<T>::l, Local_M<T>::l->start_thread(p, n)));
         }
     };
 
@@ -94,7 +94,7 @@ namespace EX {
     public:
         Local_NormInit_Impl(const LocalModule<T>* _l, const typename T::Config _c, const typename T::Priv _p) : Local_M<T>(_l), c(_c), p(_p) {};
         std::shared_ptr<Local_Start> norm_init() {
-            return std::shared_ptr<Local_Start>(new Local_Start_Impl<T>(l, p, l->norm_init(c)));
+            return std::shared_ptr<Local_Start>(new Local_Start_Impl<T>(Local_M<T>::l, p, Local_M<T>::l->norm_init(c)));
         }
     };
     template <typename T>
@@ -104,7 +104,7 @@ namespace EX {
     public:
         Local_PrivInit_Impl(const LocalModule<T>* _l, const typename T::Config _c) : Local_M<T>(_l), c(_c) {};
         std::shared_ptr<Local_NormInit> priv_init() {
-            return std::shared_ptr<Local_NormInit>(new Local_NormInit_Impl<T>(l, c, l->priv_init(c)));
+            return std::shared_ptr<Local_NormInit>(new Local_NormInit_Impl<T>(Local_M<T>::l, c, Local_M<T>::l->priv_init(c)));
         }
     };
 
@@ -113,7 +113,7 @@ namespace EX {
     public:
         Local_Config_Impl(const LocalModule<T>* _l) : Local_M<T>(_l) {};
         std::shared_ptr<Local_PrivInit> config(sol::table e) {
-            return std::shared_ptr<Local_PrivInit>(new Local_PrivInit_Impl<T>(l, l->config(e)));
+            return std::shared_ptr<Local_PrivInit>(new Local_PrivInit_Impl<T>(Local_M<T>::l, Local_M<T>::l->config(e)));
         }
     };
 
