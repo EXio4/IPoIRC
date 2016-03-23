@@ -82,7 +82,7 @@ namespace EX {
     public:
         Local_Start_Impl(const LocalModule<T>* _l, const typename T::Priv _p, const typename T::Norm _n) : Local_M<T>(_l), p(_p), n(_n) {};
         std::shared_ptr<Local_Done> start_th() {
-            return std::shared_ptr<Local_Done>(new Local_Done_Impl<T>(Local_M<T>::l, Local_M<T>::l->start_thread(p, n)));
+            return std::make_shared<Local_Done_Impl<T>>(Local_M<T>::l, Local_M<T>::l->start_thread(p, n));
         }
     };
 
@@ -94,7 +94,7 @@ namespace EX {
     public:
         Local_NormInit_Impl(const LocalModule<T>* _l, const typename T::Config _c, const typename T::Priv _p) : Local_M<T>(_l), c(_c), p(_p) {};
         std::shared_ptr<Local_Start> norm_init() {
-            return std::shared_ptr<Local_Start>(new Local_Start_Impl<T>(Local_M<T>::l, p, Local_M<T>::l->norm_init(c)));
+            return std::make_shared<Local_Start_Impl<T>>(Local_M<T>::l, p, Local_M<T>::l->norm_init(c));
         }
     };
     template <typename T>
@@ -104,7 +104,7 @@ namespace EX {
     public:
         Local_PrivInit_Impl(const LocalModule<T>* _l, const typename T::Config _c) : Local_M<T>(_l), c(_c) {};
         std::shared_ptr<Local_NormInit> priv_init() {
-            return std::shared_ptr<Local_NormInit>(new Local_NormInit_Impl<T>(Local_M<T>::l, c, Local_M<T>::l->priv_init(c)));
+            return std::make_shared<Local_NormInit_Impl<T>>(Local_M<T>::l, c, Local_M<T>::l->priv_init(c));
         }
     };
 
@@ -113,13 +113,13 @@ namespace EX {
     public:
         Local_Config_Impl(const LocalModule<T>* _l) : Local_M<T>(_l) {};
         std::shared_ptr<Local_PrivInit> config(sol::table e) {
-            return std::shared_ptr<Local_PrivInit>(new Local_PrivInit_Impl<T>(Local_M<T>::l, Local_M<T>::l->config(e)));
+            return std::make_shared<Local_PrivInit_Impl<T>>(Local_M<T>::l, Local_M<T>::l->config(e));
         }
     };
 
     template <typename T>
-    std::shared_ptr<Local_Config> local_module(LocalModule<T>* l) {
-        return std::shared_ptr<Local_Config>(new Local_Config_Impl<T>(l));
+    std::shared_ptr<Local_Config> local_module(const LocalModule<T>* l) {
+        return std::make_shared<Local_Config_Impl<T>>(l);
     }
 
 }
