@@ -10,7 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-Net  NetModule::priv_init(NetConfig cfg) {
+Net  NetModule::priv_init(NetConfig cfg) const {
     int listen_fd, comm_fd;
 
     struct sockaddr_in servaddr;
@@ -34,7 +34,7 @@ Net  NetModule::priv_init(NetConfig cfg) {
                };
 };
 
-void NetModule::worker_reader(Net net, Comm::Socket s) {
+void NetModule::worker_reader(Net net, Comm::Socket s) const {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     if (!sbuffer) return;
 
@@ -49,7 +49,7 @@ void NetModule::worker_reader(Net net, Comm::Socket s) {
         write(net.c_fd , sbuffer , nbytes);
     }
 };
-void NetModule::worker_writer(Net net, Comm::Socket s) {
+void NetModule::worker_writer(Net net, Comm::Socket s) const {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     if (!sbuffer) return;
 

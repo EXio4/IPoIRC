@@ -13,16 +13,6 @@ namespace Comm {
 
     using Ctx = void*;
 
-    // ??
-    enum Host {
-        LocalLibrary,
-        ChatLibrary
-    }
-
-    class Context {
-        virtual std::unique_ptr<Socket> connect(Host);
-    }
-    Socket connect(Ctx, const std::string&);
 
 }
 #endif

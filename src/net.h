@@ -22,22 +22,22 @@ struct NetModuleT {
 
 
 class NetModule : public LocalModule<NetModuleT> {
-    std::string module_name() noexcept { return "net"; };
-    HelpText help() noexcept { return
+    std::string module_name() const noexcept { return "net"; };
+    HelpText help() const noexcept { return
                                 {{"port", "Local port (to listen to)"}
                                 }; }; // any suggestions?
-    NetConfig config(sol::table cfg) {
+    NetConfig config(sol::table cfg) const {
         return NetConfig {.port = cfg.get<int>("port")};
     }
 
 
-    Net   priv_init(NetConfig cfg);
-    Unit  norm_init(NetConfig    ) { return Unit {}; };
+    Net   priv_init(NetConfig cfg) const;
+    Unit  norm_init(NetConfig    ) const { return Unit {}; };
 
-    Net start_thread(Net x, Unit) { return x; };
+    Net start_thread(Net x, Unit) const { return x; };
 
-    void worker_reader(Net net, Comm::Socket s);
-    void worker_writer(Net net, Comm::Socket s);
+    void worker_reader(Net net, Comm::Socket s) const;
+    void worker_writer(Net net, Comm::Socket s) const;
 /* */
 };
 

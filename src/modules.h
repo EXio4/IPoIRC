@@ -13,13 +13,13 @@ class InitExc {
 
 class CoreModule {
 public:
-    virtual std::string module_name() noexcept = 0;
-    virtual HelpText help() noexcept = 0;
+    virtual std::string module_name() const noexcept = 0;
+    virtual HelpText help() const noexcept = 0;
 };
 
 class LogModule : public virtual CoreModule {
 public:
-    virtual std::ostream& log(Log::Level l) {
+    virtual std::ostream& log(Log::Level l) const {
         return Log::gen(module_name(), l);     // default implementation should be good enough most of them time?
     }
 };
@@ -31,14 +31,14 @@ public:
     using Priv   = typename T::Priv  ;
     using Norm   = typename T::Norm  ;
     using State  = typename T::State ;
-    virtual Config config(sol::table) = 0;
+    virtual Config config(sol::table) const = 0;
 
-    virtual Priv priv_init(Config) = 0;
-    virtual Norm norm_init(Config) = 0;
+    virtual Priv priv_init(Config) const = 0;
+    virtual Norm norm_init(Config) const = 0;
 
-    virtual State start_thread(Priv, Norm) = 0;
-    virtual void worker_reader(State, Comm::Socket) = 0;
-    virtual void worker_writer(State, Comm::Socket) = 0;
+    virtual State start_thread(Priv, Norm) const = 0;
+    virtual void worker_reader(State, Comm::Socket) const = 0;
+    virtual void worker_writer(State, Comm::Socket) const = 0;
 };
 
 struct Unit {};

@@ -11,7 +11,7 @@
 #include "ltun.h"
 #include "tun.h"
 
-void TunModule::worker_reader(std::shared_ptr<Tun> tun, Comm::Socket socket) {
+void TunModule::worker_reader(std::shared_ptr<Tun> tun, Comm::Socket socket) const {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     if (!sbuffer) return;
 
@@ -26,7 +26,7 @@ void TunModule::worker_reader(std::shared_ptr<Tun> tun, Comm::Socket socket) {
         tun->write(sbuffer, nbytes);
     }
 };
-void TunModule::worker_writer(std::shared_ptr<Tun> tun, Comm::Socket socket) {
+void TunModule::worker_writer(std::shared_ptr<Tun> tun, Comm::Socket socket) const {
     char *sbuffer = (char*)malloc(sizeof(char)*MTU);
     if (!sbuffer) return;
 
