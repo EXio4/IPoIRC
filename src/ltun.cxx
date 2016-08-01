@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include "ltun.h"
+#include "utils.h"
 
 Tun::Tun(std::string dev, uint16_t mtu, std::string local, std::string remote) {
     intf = intf_open();
@@ -71,18 +72,16 @@ Tun::~Tun() {
 
 
 std::vector<uint8_t> Tun::read() const {
-    return {};
+    if (!intf) return {};
+    char buffer[4096];
+    int n = ::read(fd, buffer, 4096);
+    if (n >= 0) {
+        return Utils::from_ptr(buffer, n);
+    } else {
+        return {};
+    }
 }
-bool Tun::write(const std::vector<uint8_t>&) const {
-    return true;
+bool Tun::write(const std::vector<uint8_t>& b) const {
+    if (!intf) return false;
+    return ::write(fd, b.data(), b.size()) == b.size();
 }
-/*
-int tun_read(char *buf, uint16_t len) const {
-    if (!intf) return -1;
-    return ::read(fd, buf, (int)len);
-};
-int tun_write(const char *buf, uint16_t len) const {
-    if (!intf) return -1;
-    return ::write(fd, buf, (int)len);
-};
-*/
