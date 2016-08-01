@@ -8,8 +8,8 @@
 #include <time.h>
 #include <string.h>
 #include <sol/sol.hpp>
-#include <zmq.h>
 
+#include "zmq-comm.h"
 #include "log.h"
 #include "irc.h"
 #include "tun.h"
@@ -53,7 +53,7 @@ void usage(std::string self, const std::vector<std::shared_ptr<T>> &mods) {
 
 void program(sol::table& cfg, std::shared_ptr<EX::Local_Config> local_s1) {
 
-    void *zmq_context = zmq_ctx_new();
+    Comm::Ctx ctx = ZMQComm::create();
 
     log(Log::Info) << "Loading general settings" << std::endl;
     int uid = cfg.get<int>("uid");
@@ -77,33 +77,17 @@ void program(sol::table& cfg, std::shared_ptr<EX::Local_Config> local_s1) {
 
     log(Log::Info) << "running as " << getuid() << std::endl;
 
-    std::thread tun_th([zmq_context,&local_s5]() {
-        std::thread zmq_th([zmq_context,&local_s5]() {
-            void *socket = zmq_socket(zmq_context, ZMQ_PULL);
-            if (!socket) return;
-
-            if (zmq_bind(socket, "inproc://#irc_to_#tun")) {
-                local_s5->log(Log::Fatal) << "(tun_thread_zmq) error when connecting to IPC socket - " << zmq_strerror(errno) << std::endl;
-                zmq_close(socket);
-                return;
-            }
+    std::thread net_writer_th([ctx,&local_s5]() {
+        std::thread net_recv_th([ctx,&local_s5]() {
+            Comm::Socket socket = ctx->connect(Comm::Net2Chat);
             local_s5->worker_reader(socket);
-            zmq_close(socket);
         });
 
         {
-            void *socket = zmq_socket(zmq_context, ZMQ_PUSH);
-            if (!socket) return;
-
-            if (zmq_bind(socket, "inproc://#tun_to_#irc")) {
-                local_s5->log(Log::Fatal) << "error when creating IPC socket - " << zmq_strerror(errno) << std::endl;
-                zmq_close(socket);
-                return;
-            }
+            Comm::Socket socket = ctx->connect(Comm::Chat2Net);
             local_s5->worker_writer(socket);
-            zmq_close(socket);
         }
-        zmq_th.join();
+        net_recv_th.join();
     });
 
     sleep(1);
@@ -115,7 +99,7 @@ void program(sol::table& cfg, std::shared_ptr<EX::Local_Config> local_s1) {
     for (int i=0; i < threads; i++) {
         irc_closure cl;
         cl.xid     = i;
-        cl.context = zmq_context;
+        cl.ctx     = ctx;
         cl.netid   = c.get<std::string>("netid"   );
         cl.nick    = c.get<std::string>("nick"    );
         cl.chan    = c.get<std::string>("channel" );
@@ -130,7 +114,7 @@ void program(sol::table& cfg, std::shared_ptr<EX::Local_Config> local_s1) {
     }
 
 
-    tun_th.join();
+    net_writer_th.join();
 
 }
 

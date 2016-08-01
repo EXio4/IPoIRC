@@ -3,6 +3,8 @@
 
 #include "build-libircclient.h"
 #include "log.h"
+#include "comm.h"
+#include <memory>
 #include <regex>
 
 #define MAX_IRC_THREADS 20
@@ -10,7 +12,7 @@
 typedef struct irc_closure {
 
     int                  xid;
-    void                *context;
+    Comm::Ctx            ctx;
 
     std::string         netid;
     std::regex          regex      ,

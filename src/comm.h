@@ -1,17 +1,28 @@
 #ifndef IPOIRC_COMM_H
 #define IPOIRC_COMM_H
 #include <string>
+#include <memory>
+#include <vector>
+
 namespace Comm {
-/*
-    class Socket {
-        virtual std::vector<uint8_t> recv();
-        virtual void write(std::vector<uint8_t>);
-    }
-*/
+    enum SocketSide {
+            Net2Chat,
+            Chat2Net
+    };
 
-    using Socket = void*;
+    class SocketInt {
+    public:
+        virtual std::vector<uint8_t> recv() = 0;
+        virtual bool send(const std::vector<uint8_t>&) = 0;
+    };
+    using Socket = std::shared_ptr<SocketInt>;
 
-    using Ctx = void*;
+    class CtxInt {
+    public:
+        virtual Socket connect(SocketSide) = 0;
+    };
+    using Ctx = std::shared_ptr<CtxInt>;
+
 
 
 }

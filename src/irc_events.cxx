@@ -69,7 +69,7 @@ void event_message(irc_session_t *session, const char *event, const char *origin
             boost::optional<std::vector<uint8_t>> st = B2T::decode(buf);
             if (!st) {
                 ctx->self.log(Log::Error) << "error when decoding base64 buffer (" << buf << ")" << std::endl;
-            } else if (zmq_send(ctx->data, st->data(), st->size(), 0) < 0) {
+            } else if (ctx->socket->send(*st) < 0) {
                     ctx->self.log(Log::Error) << "error trying to send a message to the tun (warning, this WILL result in missing packets!): " << zmq_strerror(errno) << std::endl;
             }
             buf = "";

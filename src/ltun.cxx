@@ -70,11 +70,19 @@ Tun::~Tun() {
 }
 
 
-int Tun::read(char *buf, uint16_t len) const {
+std::vector<uint8_t> Tun::read() const {
+    return {};
+}
+bool Tun::write(const std::vector<uint8_t>&) const {
+    return true;
+}
+/*
+int tun_read(char *buf, uint16_t len) const {
     if (!intf) return -1;
     return ::read(fd, buf, (int)len);
 };
-int Tun::write(const char *buf, uint16_t len) const {
+int tun_write(const char *buf, uint16_t len) const {
     if (!intf) return -1;
     return ::write(fd, buf, (int)len);
 };
+*/

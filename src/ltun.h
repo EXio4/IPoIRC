@@ -4,6 +4,7 @@
 #include "build-dnet.h"
 
 #include <string>
+#include <vector>
 #include <cstdint>
 
 
@@ -33,8 +34,8 @@ public:
          return *this;
     };
 
-    int read(char *buf, uint16_t len) const;
-    int write(const char *buf, uint16_t len) const;
+    std::vector<uint8_t> read() const;
+    bool write(const std::vector<uint8_t>&) const;
 };
 
 #endif

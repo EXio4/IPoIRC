@@ -2,6 +2,7 @@
 #include <iostream>
 #include "net.h"
 #include "log.h"
+#include "utils.h"
 
 #include <zmq.h>
 #include <netdb.h>
@@ -34,32 +35,22 @@ Net  NetModule::priv_init(NetConfig cfg) const {
                };
 };
 
-void NetModule::worker_reader(Net net, Comm::Socket s) const {
-    char *sbuffer = (char*)malloc(sizeof(char)*MTU);
-    if (!sbuffer) return;
+void NetModule::worker_reader(Net net, Comm::Socket socket) const {
 
-    int nbytes = -1;
-    while ((nbytes = zmq_recv(s, sbuffer, MTU, 0)) >= 0) {
-        log(Log::Debug) << "got " << nbytes << " bytes" << std::endl;
-        if (nbytes == 0) {
-            continue;
-        } else if (nbytes > MTU) {
-            log(Log::Warning) << "warning: some message got truncated by " << nbytes - MTU << "(" << nbytes << " - " << MTU << "), this means the MTU is too low for you!" << std::endl;
-        }
-        write(net.c_fd , sbuffer , nbytes);
+    while (1) {
+        std::vector<uint8_t> buffer = socket->recv();
+        log(Log::Debug) << "got " << buffer.size() << " bytes" << std::endl;
+        write(net.c_fd, buffer.data(), buffer.size());
     }
 };
-void NetModule::worker_writer(Net net, Comm::Socket s) const {
-    char *sbuffer = (char*)malloc(sizeof(char)*MTU);
-    if (!sbuffer) return;
+void NetModule::worker_writer(Net net, Comm::Socket socket) const {
+    char sbuffer[MTU];
 
     int nbytes = -1;
     while ((nbytes = read(net.c_fd, sbuffer, MTU)) != 0) {
         if (nbytes > 0) {
             log(Log::Debug) << "got " << nbytes << " from local" << std::endl;
-            if (zmq_send(s, sbuffer, nbytes, 0) < 0) {
-                log(Log::Warning) << "error when trying to send a message to the irc thread (warning, we continue here!) :" << zmq_strerror(errno) << std::endl;
-            }
+            socket->send(Utils::from_ptr(sbuffer, nbytes));
         } else {
             log(Log::Error) << "error reading data from tun: " << strerror(errno) << std::endl;
         }
