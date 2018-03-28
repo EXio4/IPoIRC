@@ -4,13 +4,14 @@ import ModuleDef
 import qualified Data.Map as M
 import qualified Data.Vector as V
 import Control.Monad
+import Control.Concurrent.STM.TVar
 
-data System = System !(M.Map Int Module) !(V.Vector (Int,Int))
+data System = System !(M.Map Int Module) !(TVar (V.Vector (Int,Int)))
 
-create :: [(Int, Module)] -> System
-create xs = System (M.fromList xs) V.empty
-
-
+create :: [(Int, Module)] -> IO System
+create xs = do
+    v <- newTVarIO V.empty
+    return $ System (M.fromList xs) v
 
 perModule :: ((Int, Module) -> IO ()) -> System -> IO ()
 perModule cb (System m v) = do
